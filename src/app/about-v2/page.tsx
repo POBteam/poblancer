@@ -16,11 +16,11 @@ import './about.css';
 
 export const revalidate=300;
 export const metadata:Metadata={title:'About | POBlancer - POB Digital Experts',description:'Learn about POBlancer, our freelancers and the POB Digital Experts community.',robots:{index:false,follow:false}};
-const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
 const native=(path:string)=>new URL(path,origin).href;
 const asset=(url:string)=>{const path=new URL(url,origin).pathname;return (assetMap as Record<string,string>)[path]||url;};
 async function loadAbout(){
- if(process.env.POB_LOCAL_BUILD_SNAPSHOT==='1')return extractAboutPage(snapshot.content.rendered,origin);
+ if(process.env.POB_LOCAL_BUILD_SNAPSHOT==='1'||origin.includes('.local'))return extractAboutPage(snapshot.content.rendered,origin);
  try{const r=await fetch(native('/wp-json/wp/v2/pages/9946?_fields=id,content,modified'),{next:{revalidate:300,tags:['public-about']},signal:AbortSignal.timeout(8000)});if(!r.ok)throw new Error('About source unavailable');const p=await r.json();return extractAboutPage(p.content?.rendered,origin);}
  catch{console.warn('About preview is using the verified 24 October public snapshot because WordPress is unavailable.');return extractAboutPage(snapshot.content.rendered,origin);}
 }

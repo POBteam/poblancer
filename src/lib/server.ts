@@ -5,8 +5,8 @@ const admitBody=bodyState.pobBodyAdmission??=createSubmissionAdmission();
 import {sessionCookies, validOrigin} from './transport.mjs';
 import {parseRegistrationResponse} from './registration-response.mjs';
 import {canBatchRead,batchedRead} from './read-batch-server';
-export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || 'http://poblancer.local').origin;
-export const frontendOrigin = new URL(process.env.FRONTEND_ORIGIN || 'http://poblancer.local:3101').origin;
+export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || (process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
+export const frontendOrigin = new URL(process.env.FRONTEND_ORIGIN || (process.env.NODE_ENV==='production'?'https://poblancer.workers.dev':'http://poblancer.local:3101')).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
 export function failure(message:string,status:number) {return Response.json({message},{status,headers:privateHeaders});}
 export async function proxy(request:Request, path:string, requireNonce=false) {

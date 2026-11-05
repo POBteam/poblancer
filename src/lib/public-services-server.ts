@@ -2,7 +2,7 @@ import 'server-only';
 import {extractServices,serviceQuery,privateServiceQuery} from './public-services.mjs';
 import assetMap from '../data/service-assets.json';
 import snapshot from '../data/services-source.json';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
 export function serviceAssets(data:ReturnType<typeof extractServices>){return {...data,cards:data.cards.map(c=>({...c,image:asset(c.image),avatar:asset(c.avatar)}))};}
 function asset(url:string){try{return (assetMap as Record<string,string>)[new URL(url,origin).pathname]||url;}catch{return url;}}
 export function initialServices(){return serviceAssets(extractServices(snapshot.html,origin));}

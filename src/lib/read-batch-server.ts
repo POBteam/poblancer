@@ -4,7 +4,7 @@ import {createReadBatcher,batchableReadPath} from './read-batcher.mjs';
 import {sessionCookies,localBatchOrigin} from './transport.mjs';
 import {createLatencySummary} from './latency-summary.mjs';
 const secret=process.env.WORDPRESS_READ_BATCH_SECRET||'';
-const wp=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const wp=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
 const local=localBatchOrigin(wp,process.env.POB_ISOLATED_BENCHMARK==='1');
 const state=globalThis as typeof globalThis & {pobReadBatcher?:ReturnType<typeof createReadBatcher>;pobWordPressTiming?:ReturnType<typeof createLatencySummary>};
 const wordpressTiming=state.pobWordPressTiming??=createLatencySummary(['bootstrap_ms','handler_ms','query_count','peak_mb']);

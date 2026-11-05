@@ -1,7 +1,7 @@
 import {parsePublicHtml,byTag,byClass} from '../../../lib/public-home.mjs';
 import {readBoundedBody} from '../../../lib/request-body.mjs';
 export const dynamic='force-dynamic';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
 const attempts=new Map<string,{count:number;until:number}>();
 export async function POST(request:Request){
  const expected=new URL(process.env.FRONTEND_ORIGIN||request.url).origin;

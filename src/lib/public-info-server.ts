@@ -1,7 +1,7 @@
 import 'server-only';
 import snapshots from '../data/public-info-pages.json';
 import {extractInfoPage,infoTitles} from './public-info.mjs';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
 export async function readInfoPage(slug:string){
  if(!Object.hasOwn(infoTitles,slug))return null;
  const saved=(snapshots as Record<string,{html:string}>)[slug];

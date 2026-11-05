@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "poblancer",
+  "compatibility_date": "2026-11-05",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "main": ".cloudflare/output/v0/workers/default/bundle/index.js",
+  "assets": {
+    "directory": ".cloudflare/output/v0/workers/default/assets",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
+    "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*"]
+  },
+  "vars": {
+    "WORDPRESS_ORIGIN": "https://pob.com.ng",
+    "FRONTEND_ORIGIN": "https://poblancer.workers.dev"
+  }
+}

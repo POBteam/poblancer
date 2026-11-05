@@ -1,7 +1,7 @@
 import {parseFeedbackSurvey} from '../../../lib/feedback-survey.mjs';
 import {readBoundedBody} from '../../../lib/request-body.mjs';
 export const dynamic='force-dynamic';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
 let active=0;
 async function survey(){const r=await fetch(new URL('/contact/',origin),{next:{revalidate:300,tags:['public-feedback-config']},signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error();const html=await r.text();if(html.length>2000000)throw new Error();return parseFeedbackSurvey(html);}
 export async function GET(){try{const s=await survey();return Response.json({question:s.question,maxLength:400},{headers:{'Cache-Control':'public,max-age=60'}});}catch{return Response.json({message:'Feedback is temporarily unavailable. Please try again later.'},{status:503});}}
