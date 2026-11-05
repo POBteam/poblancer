@@ -1,0 +1,8 @@
+import 'server-only';
+import snapshot from '../data/freelancers-source.json';
+import profiles from '../data/freelancer-profiles.json';
+import {extractFreelancers,extractFreelancerProfile,freelancerQuery} from './public-freelancers.mjs';
+const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+export function initialFreelancers(){return extractFreelancers(snapshot.html,origin);}
+export async function readFreelancers(input:URLSearchParams){const query=freelancerQuery(input),page=query.get('paged')||'1';query.delete('paged');const url=new URL(Number(page)>1?`/freelancers/page/${page}/`:'/freelancers/',origin);url.search=query.toString();const response=await fetch(url,{next:{revalidate:300,tags:['public-freelancers']},headers:{Accept:'text/html'},signal:AbortSignal.timeout(15000)});if(!response.ok||Number(response.headers.get('content-length'))>2000000)throw new Error('Freelancer source unavailable.');const html=await response.text(),data=extractFreelancers(html,origin);return data;}
+export async function readFreelancerProfile(slug:string){if(!/^[a-z0-9][a-z0-9-]{0,240}$/.test(slug))return null;const path=`/freelancer/${slug}/`,snapshot=(profiles as Record<string,string>)[path];try{const response=await fetch(new URL(path,origin),{next:{revalidate:300,tags:['public-freelancer-profiles']},headers:{Accept:'text/html'},signal:AbortSignal.timeout(15000)});if(response.status===404)return null;if(!response.ok||Number(response.headers.get('content-length'))>2000000)throw new Error('Unavailable');return extractFreelancerProfile(await response.text(),origin,path);}catch{if(snapshot)return extractFreelancerProfile(snapshot,origin,path);throw new Error('Could not load this freelancer. Please try again.');}}

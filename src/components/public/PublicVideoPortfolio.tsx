@@ -1,0 +1,3 @@
+import VideoPortfolioGallery from './VideoPortfolioGallery';
+const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+export default async function PublicVideoPortfolio({id}:{id:number}){if(!id||process.env.POB_LOCAL_BUILD_SNAPSHOT==='1')return null;try{const r=await fetch(new URL('/wp-json/poblancer/v1/video-portfolio?id='+id,origin),{next:{revalidate:60,tags:['public-video-portfolio-'+id]},signal:AbortSignal.timeout(8000)});if(!r.ok)return null;const data=await r.json();return Array.isArray(data.items)?<VideoPortfolioGallery items={data.items}/>:null;}catch{return null;}}

@@ -1,0 +1,5 @@
+import {publicReactLink} from '../../lib/public-routes.mjs';
+import homeIcons from '../../lib/home-icons.json';
+import {createElement,Fragment,type ReactNode} from 'react';
+export type ContentNode=string|{tag:string;attrs:{className?:string;href?:string;src?:string;alt?:string;style?:{width:string}};children:ContentNode[]}|null;
+export default function DetailContent({node,context=''}:{node:ContentNode;context?:string}):ReactNode{if(!node)return null;if(typeof node==='string')return node;const icon=node.attrs.className?.split(' ').find(c=>c.startsWith('flaticon-'));if(node.tag==='i'&&icon)return <span className="detail-icon" aria-hidden="true">{(homeIcons as Record<string,string>)[icon]||''}</span>;const children=node.children.map((child,i)=><Fragment key={i}><DetailContent node={child} context={context}/></Fragment>);if(node.tag==='img')return createElement('img',{...node.attrs,loading:'lazy',decoding:'async'});if(node.tag==='br')return <br/>;const attrs=node.tag==='a'&&node.attrs.href?{...node.attrs,href:publicReactLink(node.attrs.href,undefined,context)}:node.attrs;return createElement(node.tag,attrs,...children);}

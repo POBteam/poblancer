@@ -1,0 +1,11 @@
+# Listing details and responsive Jobs search
+
+Added React `/job/[slug]`, `/service/[slug]` and `/project/[slug]` routes. Archive and homepage listing links and related-listing destinations stay on the React frontend. WordPress remains the public content source, with bounded server-side parsing, approved route kinds/slugs, five-minute fetch caching and captured fallback content for all 26 current listings.
+
+Captured and verified both original Service templates, including the native template used by service 5557. Detail data includes descriptions, original formatting, overview fields, gallery, video, FAQ, seller information, packages and addon descriptions, related records and application-closed notices. Gallery thumbnails, FAQ disclosure, package tabs and sharing are React interactions. Raw source scripts, forms, event handlers, guest nonces and unsafe URLs are removed before rendering. No SQL, plugin, payment or webhook changes were made.
+
+The Jobs search changes to a one-column grid at widths up to 900px. Its form has automatic height, wrapping salary options and a full-width button. This removes the fixed 125px height that caused controls to overflow in the supplied screenshots. Normal desktop layout retains the original arrangement.
+
+Verification: production build passed. Three meaningful detail adapter tests passed, covering all 26 records, packages/FAQ/video and executable-markup exclusion. HTTP checks returned 200 and expected headings for Jobs and representative Job, Project and Service detail routes. Browser screenshots of original Job and Service details informed the layouts. Final browser automation repeatedly timed out on 27 October, so the updated mobile layout and final detail-page visual fidelity remain unverified in the browser.
+
+Scope boundary: this is the detail presentation port. Save/report, purchases and addon selection at checkout, proposals, reviews and contact submissions still explicitly hand off to their existing WordPress workflows. They are labelled accordingly; no fake local submissions or client earnings calculations were introduced. Porting these mutations into the React pages with their original backend hooks is remaining work. Do not call this a completed transaction migration or claim 1,000-user capacity.

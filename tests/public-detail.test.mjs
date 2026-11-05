@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {extractDetail,safeDetailNode,detailLink} from '../src/lib/public-detail.mjs';
+import {parsePublicHtml} from '../src/lib/public-home.mjs';
+const origin='http://poblancer.local';
+const sources=JSON.parse(fs.readFileSync(new URL('../src/data/detail-sources.json',import.meta.url)));
+test('All 26 existing listing details retain descriptions and local detail destinations',()=>{assert.equal(Object.keys(sources).length,26);for(const [path,html] of Object.entries(sources)){const data=extractDetail(html,path.split('/')[1],origin,path);assert.ok(data.title,path);assert.ok(data.description,path);assert.ok(data.id>0,path);assert.equal(detailLink(origin+path,origin),path);assert.ok(!JSON.stringify(data).includes('data-nonce'),path);}});
+test('Service packages, original FAQ and embedded video remain available',()=>{const path=Object.keys(sources).find(p=>p.includes('realistic-human'));const d=extractDetail(sources[path],'service',origin,path);assert.equal(d.packages.length,3);assert.equal(d.faq.length,6);assert.match(d.packages[0].price,/150,000/);assert.equal(d.packages[0].addons.length,4);assert.match(d.video,/M490wFWGITU/);assert.ok(d.gallery.length>0);});
+test('Detail renderer data strips executable content, forms, event attributes and unsafe links',()=>{const d=safeDetailNode(parsePublicHtml('<div onclick="bad()"><script>bad()</script><form><input value="secret"/></form><a href="javascript:bad()">Unsafe</a><img src="data:text/html,bad" onerror="bad()"/><p>Original content</p></div>'),origin);const value=JSON.stringify(d);assert.ok(!/secret|onclick|onerror|javascript:|data:text|bad\(\)/.test(value));assert.match(value,/Original content/);assert.equal(detailLink('https://example.org/job/example/',origin),'https://example.org/job/example/');assert.throws(()=>extractDetail('<p>Missing</p>','job',origin,'/job/example/'));});

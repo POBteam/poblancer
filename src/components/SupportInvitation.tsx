@@ -1,0 +1,10 @@
+'use client';
+import {useState} from 'react';
+import type {Session} from '../lib/client';
+import {mutate} from './ScreenTools';
+export default function SupportInvitation({session,offer,refresh}:{session:Session;offer:any;refresh:()=>void}){
+ const [query,setQuery]=useState(''),[rows,setRows]=useState<any[]>([]),[selected,setSelected]=useState(''),[busy,setBusy]=useState(false),[status,setStatus]=useState('');
+ async function search(){setBusy(true);setStatus('');try{const out=await mutate('poblancer/v1/support/action',session,{action:'find_freelancers',query});setRows(out.rows);setSelected('');if(!out.rows.length)setStatus('No matching eligible POB freelancers. Try their username.');}catch(e){setStatus((e as Error).message);}finally{setBusy(false);}}
+ async function invite(){setBusy(true);setStatus('');try{await mutate('poblancer/v1/support/action',session,{action:'invite',case_id:offer.case_id,revision:offer.case_revision,offer_id:offer.id,freelancer_id:Number(selected)});setStatus('Invitation sent to their Project support dashboard. They can accept the offered share, suggest another share or decline.');refresh();}catch(e){setStatus((e as Error).message);}finally{setBusy(false);}}
+ return <details className="support-invite"><summary>Find and invite a freelancer</summary><p>Search the POB team by username or display name. An invitation asks them to review this offer; it does not assign work without their agreement.</p><form onSubmit={e=>{e.preventDefault();void search();}}><label>Freelancer username or name<input value={query} onChange={e=>setQuery(e.target.value)} minLength={2} maxLength={60} required/></label><button className="button" disabled={busy}>Find freelancer</button></form>{rows.length>0&&<><label>Choose a freelancer<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Select</option>{rows.map(r=><option key={r.id} value={r.id}>{r.name} (@{r.username})</option>)}</select></label><button className="button primary" disabled={busy||!selected} onClick={()=>void invite()}>Send invitation</button></>}<p role="status">{status}</p></details>;
+}

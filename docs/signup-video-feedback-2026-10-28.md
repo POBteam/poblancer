@@ -1,0 +1,9 @@
+# Signup video, homepage return and feedback, 28 October 2026
+
+- Login Back to website and auth logos use root-relative / links, so they remain on the deployed frontend domain.
+- Freelancer registration replaces the old team image/caption with a light brand gradient prompt. Gentle CSS movement respects reduced-motion preferences. Video iframe is created only on click, autoplays the existing branding video 6w_xxOkFmtQ and is removed when closed. Employer registration has no prompt or iframe.
+- Registration Terms and Privacy links use React destinations and open in a new tab.
+- A shared bottom-right feedback button is included globally. The form loads the current question on opening, rather than on every navigation. It posts through /api/feedback to the existing UserFeedback survey 1 response endpoint and original question ID. The original userfeedback_survey_response hook remains in place. Nonces stay server-side. No automatic impression records are created. The adapter bounds request sizes and concurrent requests; production still needs edge abuse controls.
+- Build/type checks and three mocked feedback route tests passed. Public feedback configuration returned HTTP 200. Browser checked opening/closing the video, its autoplay URL, removal on close, hiding the prompt when Employer is selected, the original question and 400-character feedback field, root-relative Back link, and new-tab Terms links. No real survey response or email was submitted.
+- No backend plugin, database, business rule, payment or webhook hook names changed.
+- FREELANCER_WELCOME_SCRIPT_AND_VIDEO_BRIEF.md contains a 312-word narration, exact timing rules, detailed storyboard, Remotion production prompt and NotebookLM prompt. It uses the approved ten-day/day-seven example. No video was rendered or installed for this writing request.

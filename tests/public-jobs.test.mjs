@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {extractJobs,jobQuery} from '../src/lib/public-jobs.mjs';
+test('Jobs retain records, all original categories and filter groups without guest nonces',()=>{const d=extractJobs(JSON.parse(fs.readFileSync(new URL('../src/data/jobs-source.json',import.meta.url))).html,'http://poblancer.local');assert.equal(d.cards.length,2);assert.equal(d.cards[0].id,5655);assert.equal(d.groups.length,8);assert.equal(d.groups[0].fields[0].options.filter(o=>o.value).length,7);assert.match(d.cards[0].salary,/220,000/);assert.equal(d.cards[0].categories.length,2);assert.ok(!JSON.stringify(d).includes('nonce'));});
+test('Job query preserves backend filter names, repeated regions and numeric validation',()=>{const q=jobQuery(new URLSearchParams('filter-category=57&filter-salary_type=monthly&filter-type=full-time&filter-location[]=1&filter-location[]=2&filter-salary-to=250000'));assert.equal(q.get('filter-category'),'57');assert.equal(q.get('filter-salary_type'),'monthly');assert.deepEqual(q.getAll('filter-location[]'),['1','2']);assert.throws(()=>jobQuery(new URLSearchParams('filter-salary-to=invalid')));assert.throws(()=>extractJobs('<p>Unavailable</p>','http://poblancer.local'));});

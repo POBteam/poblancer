@@ -1,0 +1,3 @@
+import {employerQuery} from '../../../../lib/public-employers.mjs';
+import {readEmployers} from '../../../../lib/public-employers-server';
+export async function GET(request:Request){let query:URLSearchParams;try{query=employerQuery(new URL(request.url).searchParams);}catch{return Response.json({message:'Check your employer filters.'},{status:400});}try{return Response.json(await readEmployers(query),{headers:{'Cache-Control':'public, max-age=60, s-maxage=300','X-Content-Type-Options':'nosniff'}});}catch{return Response.json({message:'Could not load these employers. Your previous results are still shown. Please try again.'},{status:502,headers:{'Cache-Control':'no-store'}});}}

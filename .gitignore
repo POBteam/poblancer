@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.next-dev/
+.next-production/
+.npm-cache/
+.env*.local
+*.tsbuildinfo
+test-results/
+.preview-control
+backups/
+
+.preview-*
+*.har
+*.log
+.DS_Store
+docs/portfolio-backup-2026-10-28/

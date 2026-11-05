@@ -1,0 +1,3 @@
+import {jobQuery} from '../../../../lib/public-jobs.mjs';
+import {readJobs} from '../../../../lib/public-jobs-server';
+export async function GET(request:Request){let query:URLSearchParams;try{query=jobQuery(new URL(request.url).searchParams);}catch{return Response.json({message:'Check your job filters.'},{status:400});}try{return Response.json(await readJobs(query),{headers:{'Cache-Control':'public, max-age=60, s-maxage=300','X-Content-Type-Options':'nosniff'}});}catch{return Response.json({message:'Could not load these jobs. Your previous results are still shown. Please try again.'},{status:502,headers:{'Cache-Control':'no-store'}});}}

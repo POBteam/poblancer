@@ -1,0 +1,16 @@
+import PublicAction from './PublicAction';
+import PublicVideoPortfolio from './PublicVideoPortfolio';
+import DetailContent from './DetailContent';
+import {DetailGallery,DetailShare} from './DetailInteractive';
+import {youtubeEmbedUrl} from '../../lib/public-video.mjs';
+import type {extractFreelancerProfile} from '../../lib/public-freelancers.mjs';
+export default function FreelancerProfile({data:d}:{data:ReturnType<typeof extractFreelancerProfile>}){
+ const video=youtubeEmbedUrl(d.video);
+ return <><div className="detail-top"><nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/freelancers">Freelancers</a> / <span>{d.title}</span></nav><div className="detail-top-actions"><DetailShare/><PublicAction id={d.id} action="save" className="detail-text-action">Save</PublicAction><PublicAction id={d.id} action="report" className="detail-text-action">Report</PublicAction></div></div>
+ <section className="detail-heading freelancer-profile-heading"><div className="detail-heading-inner"><img className="freelancer-profile-logo" src={d.logo} width="120" height="120" alt=""/><div><h1>{d.title}</h1>{d.tagline&&<p>{d.tagline}</p>}<DetailContent context="freelancers" node={d.header}/></div><div className="freelancer-heading-actions">{d.cv!=='#'&&<a className="freelancer-cv" href={d.cv}>Download CV</a>}<PublicAction id={d.id} action="message">Message</PublicAction></div></div></section>
+ <div className="detail-layout freelancer-profile-layout"><div className="detail-body"><section className="freelancer-stats"><DetailContent context="freelancers" node={d.stats}/></section><section className="detail-description"><h2>About Freelancer</h2><DetailContent context="freelancers" node={d.description}/></section>{d.gallery.length>0&&<section className="detail-section"><DetailGallery images={d.gallery} title={d.title}/></section>}{video&&<section className="detail-section"><h2>Video</h2><iframe className="detail-video" src={video.replace('autoplay=1','autoplay=0')} referrerPolicy="strict-origin-when-cross-origin" title={d.title+' video'} loading="lazy" allowFullScreen/></section>}
+ <PublicVideoPortfolio id={d.id}/>
+ {[d.skills,d.education,d.experience,d.awards].map((node,i)=><section className="detail-section freelancer-resume" key={i}><h2>{["Skills","Education","Work & Experience","Awards"][i]}</h2><DetailContent context="freelancers" node={node}/></section>)}
+ {d.services&&<section className="detail-section detail-related freelancer-services"><DetailContent context="freelancers" node={d.services}/></section>}{d.reviews&&<section className="detail-section detail-reviews"><DetailContent context="freelancers" node={d.reviews}/><PublicAction id={d.id} action="review">Write a review</PublicAction></section>}{d.related&&<section className="detail-section detail-related"><DetailContent context="freelancers" node={d.related}/></section>}</div>
+ <aside className="detail-sidebar"><section className="freelancer-profile-overview"><DetailContent context="freelancers" node={d.salary}/><DetailContent context="freelancers" node={d.overview}/>{d.social.length>0&&<nav aria-label="Freelancer social media">{d.social.map(link=><a key={link.href} href={link.href}>{link.title}</a>)}</nav>}<PublicAction id={d.id} action="message">Contact Me</PublicAction></section></aside></div></>;
+}
