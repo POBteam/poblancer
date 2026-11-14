@@ -165,3 +165,30 @@ foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration'] as $act
     add_action('wp_ajax_' . $action, $action);
     add_action('wp_ajax_nopriv_' . $action, $action);
 }
+
+// Support direct frontend endpoints outside /wp-admin/ to bypass administrative rules
+add_action('wp_loaded', function() {
+    $action = $_GET['pob_ajax'] ?? $_POST['pob_ajax'] ?? '';
+    if (in_array($action, ['pob_next_session', 'pob_next_login', 'pob_next_registration'], true)) {
+        call_user_func($action);
+        exit;
+    }
+});
+
+add_action('rest_api_init', function() {
+    register_rest_route('poblancer/v1', '/session', [
+        'methods'             => ['GET', 'POST'],
+        'callback'            => 'pob_next_session',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('poblancer/v1', '/login', [
+        'methods'             => 'POST',
+        'callback'            => 'pob_next_login',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('poblancer/v1', '/registration-form', [
+        'methods'             => 'POST',
+        'callback'            => 'pob_next_registration',
+        'permission_callback' => '__return_true',
+    ]);
+});

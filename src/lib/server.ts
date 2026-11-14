@@ -40,11 +40,7 @@ export const frontendOrigin = new URL(
   (process.env.NODE_ENV === 'production' ? 'https://pob.com.ng' : 'http://poblancer.local:3101')
 ).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
-export function failure(message:string,status:number,extraHeaders?:Record<string,string>) {
-  const h=new Headers(privateHeaders);
-  if(extraHeaders)for(const [k,v] of Object.entries(extraHeaders))h.set(k,v);
-  return Response.json({message:sanitizeCustomerMessage(message)},{status,headers:h});
-}
+export function failure(message:string,status:number) {return Response.json({message:sanitizeCustomerMessage(message)},{status,headers:privateHeaders});}
 export async function proxy(request:Request, path:string, requireNonce=false) {
   if(request.method!=='GET' && !validOrigin(request, allowedFrontendOrigins)) return failure("You don't have permission to perform this action from your current browser session.",403);
   if(requireNonce && !request.headers.get('x-wp-nonce')) return failure('Your session has expired. Please sign in again to continue.',401);
@@ -55,6 +51,9 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
   const originHeader = request.headers.get('origin') || request.headers.get('referer');
   const upstreamOrigin = (originHeader && validOrigin(request, allowedFrontendOrigins)) ? new URL(originHeader).origin : frontendOrigin;
   const headers=new Headers({'Accept':'application/json','Origin':upstreamOrigin,'X-POB-Frontend':'1'});
+  const userAgent = request.headers.get('user-agent');
+  if (userAgent) headers.set('User-Agent', userAgent);
+  else headers.set('User-Agent', 'Mozilla/5.0 (compatible; POBlancer/1.0; +https://pob.com.ng)');
   const cookies=sessionCookies(request.headers.get('cookie')||'');if(cookies)headers.set('Cookie',cookies);
   for(const name of ['content-type','x-wp-nonce']) {const value=request.headers.get(name);if(value)headers.set(name,value);}
   // No credentials, forwarded IP, upstream URL or account identity accepted from request data.
@@ -86,13 +85,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
           contentType,
           snippet: errText.slice(0, 300)
         });
-        return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502,{
-          'X-POB-Debug-Target': new URL(path, backendOrigin).toString(),
-          'X-POB-Debug-Status': String(upstream.status),
-          'X-POB-Debug-CT': contentType,
-          'X-POB-Debug-IsWorker': String(upstream.headers.has('x-vinext-build-id')),
-          'X-POB-Debug-Snippet': errText.slice(0, 100).replace(/[\r\n\t]+/g, ' ')
-        });
+        return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502);
       }
     }
     const output=new Headers(privateHeaders);
@@ -105,9 +98,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
   } catch(error) {
     if(error instanceof BodyError)return failure(error.message,error.status);
     console.error('[POBlancer Upstream Service Error]', error instanceof Error ? error.message : error);
-    return failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502,{
-      'X-POB-Debug-Error': error instanceof Error ? error.message : String(error)
-    });
+    return failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502);
   }
   finally{releaseBody?.();}
 }

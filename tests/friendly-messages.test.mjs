@@ -68,3 +68,4 @@ test('sanitizeCustomerMessage preserves clean non-technical messages', () => {
   const msg = 'Please check the highlighted fields.';
   assert.equal(sanitizeCustomerMessage(msg), msg);
 });
+
