@@ -1,6 +1,6 @@
 import {publicReactLink} from '../../lib/public-routes.mjs';
 import homeIcons from '../../lib/home-icons.json';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||'http://poblancer.local').origin;
+const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
 const native=(path:string)=>publicReactLink(new URL(path,origin).href,origin);
 const browse=[['Services','/services/'],['Projects','/projects/'],['Jobs','/jobs/']];
 const overview=[['Employers','/employers/'],['Freelancers','/freelancers/'],['Become Seller','/become-seller/']];

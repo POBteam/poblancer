@@ -50,7 +50,7 @@ export default function Workspace(){
   const rewrite=()=>host.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(anchor=>{if(anchor.closest('.pilot-banner,.community'))return;const hash=dashboardHash(anchor.href,session.home);if(hash)anchor.href='/workspace'+hash;else anchor.href=publicReactLink(anchor.href,session.home);});
   rewrite();const observer=new MutationObserver(rewrite);observer.observe(host,{childList:true,subtree:true});return()=>observer.disconnect();
  },[session,data]);
- if(error)return <main id="main" className="error-card"><h1>Dashboard unavailable</h1><p role="alert">{error}</p><button className="button" onClick={refresh}>Try again</button><Link className="button" href="/login" prefetch={false}>Sign in</Link><a className="button" href="http://poblancer.local/pob-workspace/">Current dashboard</a></main>;
+ if(error)return <main id="main" className="error-card"><h1>Dashboard unavailable</h1><p role="alert">{error}</p><button className="button" onClick={refresh}>Try again</button><Link className="button" href="/login" prefetch={false}>Sign in</Link><a className="button" href={session?.home ? session.home+'pob-workspace/' : (process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng/pob-workspace/':'http://poblancer.local/pob-workspace/')}>Current dashboard</a></main>;
  if(!data||!session)return <main id="main" className="loading" role="status">Loading your dashboard…</main>;
  const employer=data.user.role==='employer',home='/',support=Boolean(data.support&&(data.support.eligible||data.support.admin||data.support.cases?.length));
  const menu=[{label:'Dashboard',route:'overview'},...(support?[{label:'Project support',route:'support'}]:[]),...data.menu];

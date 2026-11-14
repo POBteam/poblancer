@@ -2,21 +2,32 @@ import 'server-only';
 import {BodyError,createSubmissionAdmission,readBoundedBody} from './request-body.mjs';
 const bodyState=globalThis as typeof globalThis & {pobBodyAdmission?:ReturnType<typeof createSubmissionAdmission>};
 const admitBody=bodyState.pobBodyAdmission??=createSubmissionAdmission();
-import {sessionCookies, validOrigin} from './transport.mjs';
+import {sessionCookies, validOrigin, sanitizeSetCookie} from './transport.mjs';
 import {parseRegistrationResponse} from './registration-response.mjs';
 import {canBatchRead,batchedRead} from './read-batch-server';
-export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || (process.env.NODE_ENV==='production'?'https://pob.com.ng':'http://poblancer.local')).origin;
-export const frontendOrigin = new URL(process.env.FRONTEND_ORIGIN || (process.env.NODE_ENV==='production'?'https://poblancer.workers.dev':'http://poblancer.local:3101')).origin;
+export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || (process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
+
+const defaultFrontendOrigins = process.env.NODE_ENV==='production'
+  ? ['https://poblancer.pobacademycustomer6.workers.dev', 'https://pob.com.ng', 'https://poblancer.workers.dev']
+  : ['http://poblancer.local:3101', 'http://poblancer.local:3102', 'http://poblancer.local:3103', 'http://localhost:3101', 'http://localhost:3102', 'http://localhost:3103', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3105'];
+
+export const allowedFrontendOrigins = process.env.FRONTEND_ORIGIN
+  ? process.env.FRONTEND_ORIGIN.split(',').map(s=>s.trim()).filter(Boolean)
+  : defaultFrontendOrigins;
+
+export const frontendOrigin = new URL(allowedFrontendOrigins[0]).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
 export function failure(message:string,status:number) {return Response.json({message},{status,headers:privateHeaders});}
 export async function proxy(request:Request, path:string, requireNonce=false) {
-  if(request.method!=='GET' && !validOrigin(request,frontendOrigin)) return failure('Request origin is not permitted.',403);
+  if(request.method!=='GET' && !validOrigin(request, allowedFrontendOrigins)) return failure('Request origin is not permitted.',403);
   if(requireNonce && !request.headers.get('x-wp-nonce')) return failure('Please sign in again.',401);
   if(canBatchRead(request,path)){
     try{const out=await batchedRead(request,path);return Response.json(out.body,{status:out.status,headers:privateHeaders});}
     catch{return failure('WordPress could not complete this read. No automatic retry was performed.',502);}
   }
-  const headers=new Headers({'Accept':'application/json','Origin':frontendOrigin,'X-POB-Frontend':'1'});
+  const originHeader = request.headers.get('origin');
+  const upstreamOrigin = (originHeader && validOrigin(request, allowedFrontendOrigins)) ? new URL(originHeader).origin : frontendOrigin;
+  const headers=new Headers({'Accept':'application/json','Origin':upstreamOrigin,'X-POB-Frontend':'1'});
   const cookies=sessionCookies(request.headers.get('cookie')||'');if(cookies)headers.set('Cookie',cookies);
   for(const name of ['content-type','x-wp-nonce']) {const value=request.headers.get(name);if(value)headers.set(name,value);}
   // No credentials, forwarded IP, upstream URL or account identity accepted from request data.
@@ -42,7 +53,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     }
     const output=new Headers(privateHeaders);
     output.set('Content-Type',contentType);
-    for(const cookie of upstream.headers.getSetCookie()) output.append('Set-Cookie',cookie);
+    for(const cookie of upstream.headers.getSetCookie()) output.append('Set-Cookie', sanitizeSetCookie(cookie));
     const nonce=upstream.headers.get('x-wp-nonce');if(nonce)output.set('X-WP-Nonce',nonce);
     // REST commands must return structured results; never relay an unvalidated redirect.
     if(upstream.status>=300 && upstream.status<400) return failure('WordPress requested a native-page handoff. Please use the current dashboard.',502);

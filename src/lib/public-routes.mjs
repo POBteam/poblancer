@@ -3,7 +3,7 @@ const job={developers:69,business:57,'digital-marketing':72,'graphics-design':91
 const service={business:167,'design-creative':65,'development-it':71,'digital-marketing':76,lifestyle:104,'music-audio':111,'video-animation':143};
 const pages=new Set(['/','/about-v2/','/services/','/projects/','/jobs/','/employers/','/freelancers/','/become-seller/','/contact/','/faq/','/terms/','/privacy-policy/','/refund_returns-2/','/login/','/register/']);
 export function publicReactLink(value,origin='http://poblancer.local',context=''){
- try{const u=new URL(value,origin);if(![new URL(origin).hostname,'pob.com.ng','www.pob.com.ng','princesageonlinebranding.com','www.princesageonlinebranding.com'].includes(u.hostname))return value;
+ try{const u=new URL(value,origin);if(!['poblancer.pob.com.ng',new URL(origin).hostname,'pob.com.ng','www.pob.com.ng','princesageonlinebranding.com','www.princesageonlinebranding.com'].includes(u.hostname))return value;
  const downloads={'/wp-content/uploads/2026/05/Partnership-Agreement-POB-Freelancers.pdf':'/downloads/Partnership-Agreement-POB-Freelancers.pdf','/wp-content/uploads/2026/05/Partnership-Agreement-POB-External-Freelancer.pdf':'/downloads/Partnership-Agreement-POB-External-Freelancer.pdf'};if(downloads[u.pathname])return downloads[u.pathname];
  if(['/projects-2/','/projects-2','/project-list/','/project-list'].includes(u.pathname))return '/projects'+u.search;
  const aliases={'/projects-2/':'/projects','/jobs-2/':'/jobs','/service-layout-1/':'/services','/submission-service/':'/workspace#service-editor','/submission-project/':'/workspace#project-editor','/submission-job/':'/workspace#job-editor'};const alias=aliases[u.pathname.endsWith('/')?u.pathname:u.pathname+'/'];if(alias)return alias+u.search;

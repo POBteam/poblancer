@@ -14,7 +14,7 @@
     "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*"]
   },
   "vars": {
-    "WORDPRESS_ORIGIN": "https://pob.com.ng",
-    "FRONTEND_ORIGIN": "https://poblancer.workers.dev"
+    "WORDPRESS_ORIGIN": "https://poblancer.pob.com.ng",
+    "FRONTEND_ORIGIN": "https://poblancer.pobacademycustomer6.workers.dev"
   }
 }

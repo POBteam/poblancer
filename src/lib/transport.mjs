@@ -7,7 +7,33 @@ export function allowedPath(parts) {
   return (parts[0]==='poblancer' && parts[1]==='v1' && endpoints.has(parts.slice(2).join('/'))) || path==='wp/v2/media';
 }
 export function validOrigin(request, expected) {
-  return request.headers.get('origin')===new URL(expected).origin;
+  const reqOrigin = request.headers.get('origin');
+  if (!reqOrigin || reqOrigin === 'null') return false;
+  let normalizedReq;
+  try {
+    normalizedReq = new URL(reqOrigin).origin;
+  } catch {
+    return false;
+  }
+  const allowedList = Array.isArray(expected)
+    ? expected
+    : expected instanceof Set
+      ? Array.from(expected)
+      : typeof expected === 'string'
+        ? expected.split(',').map(s => s.trim()).filter(Boolean)
+        : [expected];
+  for (const item of allowedList) {
+    try {
+      if (normalizedReq === new URL(item).origin) return true;
+    } catch {
+      // ignore invalid item
+    }
+  }
+  return false;
+}
+export function sanitizeSetCookie(cookie) {
+  if (typeof cookie !== 'string') return cookie;
+  return cookie.replace(/;\s*domain=[^;]+/gi, '');
 }
 export function sessionCookies(value='') {
   return value.split(';').map(s=>s.trim()).filter(s=>
