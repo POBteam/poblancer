@@ -40,7 +40,11 @@ export const frontendOrigin = new URL(
   (process.env.NODE_ENV === 'production' ? 'https://pob.com.ng' : 'http://poblancer.local:3101')
 ).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
-export function failure(message:string,status:number) {return Response.json({message:sanitizeCustomerMessage(message)},{status,headers:privateHeaders});}
+export function failure(message:string,status:number,extraHeaders?:Record<string,string>) {
+  const h=new Headers(privateHeaders);
+  if(extraHeaders)for(const [k,v] of Object.entries(extraHeaders))h.set(k,v);
+  return Response.json({message:sanitizeCustomerMessage(message)},{status,headers:h});
+}
 export async function proxy(request:Request, path:string, requireNonce=false) {
   if(request.method!=='GET' && !validOrigin(request, allowedFrontendOrigins)) return failure("You don't have permission to perform this action from your current browser session.",403);
   if(requireNonce && !request.headers.get('x-wp-nonce')) return failure('Your session has expired. Please sign in again to continue.',401);
@@ -82,7 +86,13 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
           contentType,
           snippet: errText.slice(0, 300)
         });
-        return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502);
+        return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502,{
+          'X-POB-Debug-Target': new URL(path, backendOrigin).toString(),
+          'X-POB-Debug-Status': String(upstream.status),
+          'X-POB-Debug-CT': contentType,
+          'X-POB-Debug-IsWorker': String(upstream.headers.has('x-vinext-build-id')),
+          'X-POB-Debug-Snippet': errText.slice(0, 100).replace(/[\r\n\t]+/g, ' ')
+        });
       }
     }
     const output=new Headers(privateHeaders);
@@ -95,7 +105,9 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
   } catch(error) {
     if(error instanceof BodyError)return failure(error.message,error.status);
     console.error('[POBlancer Upstream Service Error]', error instanceof Error ? error.message : error);
-    return failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502);
+    return failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502,{
+      'X-POB-Debug-Error': error instanceof Error ? error.message : String(error)
+    });
   }
   finally{releaseBody?.();}
 }
