@@ -44,7 +44,13 @@ export function sanitizeCustomerMessage(raw, context = 'general') {
 
   // 5. Session expired / nonce error
   if (/(?:expired|sign in again|session.*expired|invalid session|session credentials|nonce)/i.test(clean)) {
+    if (context === 'register') return "Your session has expired. Please refresh the page and try again.";
     return "Your session has expired. Please refresh the page and sign in again.";
+  }
+
+  // 5b. Security check failed
+  if (/(?:security check)/i.test(clean)) {
+    return "Your session has expired. Please refresh the page and try again.";
   }
 
   // 6. Permission denied / origin / CORS

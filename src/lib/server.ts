@@ -70,7 +70,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     let body:BodyInit|null=upstream.body;
     let contentType=upstream.headers.get('content-type')||'application/json';
     if(!contentType.includes('application/json')) {
-      if(path==='/?wpfi-ajax=wp_freeio_ajax_registernew'){
+      if(path==='/wp-json/poblancer/v1/register' || path==='/?wpfi-ajax=wp_freeio_ajax_registernew'){
         try{body=JSON.stringify(parseRegistrationResponse(await upstream.text()));contentType='application/json';}
         catch(err){
           console.error('[POBlancer Registration Error]', err instanceof Error ? err.message : err);

@@ -1,4 +1,7 @@
 import {proxy} from '@/lib/server';
-export const dynamic='force-dynamic';
-// Exact native callback: CMB nonce/validation/user hooks remain authoritative.
-export function POST(request:Request){return proxy(request,'/?wpfi-ajax=wp_freeio_ajax_registernew');}
+
+export const dynamic = 'force-dynamic';
+
+export function POST(request: Request) {
+  return proxy(request, '/wp-json/poblancer/v1/register');
+}

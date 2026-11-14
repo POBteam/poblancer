@@ -54,7 +54,7 @@ function pob_next_guard() {
     }
 }
 
-function pob_next_session() {
+function pob_next_session($request = null) {
     pob_next_guard();
     $authenticated = is_user_logged_in();
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -82,9 +82,23 @@ function pob_next_session() {
     wp_send_json($data);
 }
 
-function pob_next_login() {
+function pob_next_login($request = null) {
     pob_next_guard();
-    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'] ?? '')), 'pob_next_login')) {
+    $nonce = $_POST['_wpnonce'] ?? '';
+    $log = $_POST['log'] ?? '';
+    $pwd = $_POST['pwd'] ?? '';
+    $remember = !empty($_POST['rememberme']);
+    if ($request instanceof WP_REST_Request) {
+        $n = $request->get_param('_wpnonce');
+        if ($n !== null) $nonce = $n;
+        $l = $request->get_param('log');
+        if ($l !== null) $log = $l;
+        $p = $request->get_param('pwd');
+        if ($p !== null) $pwd = $p;
+        $r = $request->get_param('rememberme');
+        if ($r !== null) $remember = (bool)$r;
+    }
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($nonce)), 'pob_next_login')) {
         wp_send_json(['message' => 'Your sign-in session has expired. Please refresh the page and sign in again.'], 403);
     }
     if (class_exists('WP_Freeio_Recaptcha') && WP_Freeio_Recaptcha::is_recaptcha_enabled()) {
@@ -99,9 +113,9 @@ function pob_next_login() {
     set_transient($key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
     
     $user = wp_signon([
-        'user_login'    => sanitize_text_field(wp_unslash($_POST['log'] ?? '')),
-        'user_password' => wp_unslash($_POST['pwd'] ?? ''),
-        'remember'      => !empty($_POST['rememberme']),
+        'user_login'    => sanitize_text_field(wp_unslash($log)),
+        'user_password' => wp_unslash($pwd),
+        'remember'      => $remember,
     ], is_ssl());
     
     if (is_wp_error($user)) {
@@ -127,9 +141,15 @@ function pob_next_login() {
     wp_send_json(['authenticated' => true]);
 }
 
-function pob_next_registration() {
+function pob_next_registration($request = null) {
     pob_next_guard();
-    $role = (isset($_POST['role']) && $_POST['role'] === 'employer') ? 'employer' : 'freelancer';
+    $role = 'freelancer';
+    if ($request instanceof WP_REST_Request) {
+        $r = $request->get_param('role');
+        if ($r === 'employer') $role = 'employer';
+    } elseif (isset($_POST['role']) && $_POST['role'] === 'employer') {
+        $role = 'employer';
+    }
     $data = [
         'role'       => $role,
         'home'       => home_url('/'),
@@ -161,7 +181,23 @@ function pob_next_registration() {
     ]));
 }
 
-foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration'] as $action) {
+function pob_next_register($request = null) {
+    pob_next_guard();
+    if ($request instanceof WP_REST_Request) {
+        $params = $request->get_params();
+        foreach ($params as $k => $v) {
+            $_POST[$k] = $v;
+            $_REQUEST[$k] = $v;
+        }
+    }
+    if (class_exists('WP_Freeio_User')) {
+        WP_Freeio_User::process_register_new();
+    } else {
+        wp_send_json(['status' => false, 'msg' => 'Registration is temporarily unavailable. Please try again in a moment.'], 503);
+    }
+}
+
+foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_next_register'] as $action) {
     add_action('wp_ajax_' . $action, $action);
     add_action('wp_ajax_nopriv_' . $action, $action);
 }
@@ -169,7 +205,7 @@ foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration'] as $act
 // Support direct frontend endpoints outside /wp-admin/ to bypass administrative rules
 add_action('wp_loaded', function() {
     $action = $_GET['pob_ajax'] ?? $_POST['pob_ajax'] ?? '';
-    if (in_array($action, ['pob_next_session', 'pob_next_login', 'pob_next_registration'], true)) {
+    if (in_array($action, ['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_next_register'], true)) {
         call_user_func($action);
         exit;
     }
@@ -189,6 +225,11 @@ add_action('rest_api_init', function() {
     register_rest_route('poblancer/v1', '/registration-form', [
         'methods'             => 'POST',
         'callback'            => 'pob_next_registration',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('poblancer/v1', '/register', [
+        'methods'             => 'POST',
+        'callback'            => 'pob_next_register',
         'permission_callback' => '__return_true',
     ]);
 });
