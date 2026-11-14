@@ -85,7 +85,12 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
           contentType,
           snippet: errText.slice(0, 300)
         });
-        return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502);
+        const failRes = failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502);
+        failRes.headers.set('X-Upstream-Status', String(upstream.status));
+        failRes.headers.set('X-Upstream-ContentType', contentType);
+        failRes.headers.set('X-Upstream-Target', new URL(path, backendOrigin).toString());
+        failRes.headers.set('X-Upstream-Snippet', errText.slice(0, 200).replace(/[\r\n]+/g, ' '));
+        return failRes;
       }
     }
     const output=new Headers(privateHeaders);
@@ -98,7 +103,9 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
   } catch(error) {
     if(error instanceof BodyError)return failure(error.message,error.status);
     console.error('[POBlancer Upstream Service Error]', error instanceof Error ? error.message : error);
-    return failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502);
+    const failRes = failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502);
+    failRes.headers.set('X-Upstream-Catch', error instanceof Error ? error.message : String(error));
+    return failRes;
   }
   finally{releaseBody?.();}
 }
