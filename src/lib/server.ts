@@ -62,7 +62,8 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     const bytes=hasBody?await readBoundedBody(request,{limit:admission!.limit}):undefined;
     const init:RequestInit & {duplex?:string}={method:request.method,headers,redirect:'manual',cache:'no-store',signal:AbortSignal.timeout(30000)};
     if(bytes)init.body=bytes;
-    const upstream=await fetch(new URL(path,wpOrigin),init);
+    const backendOrigin = resolveWordPressOrigin();
+    const upstream=await fetch(new URL(path,backendOrigin),init);
     let body:BodyInit|null=upstream.body;
     let contentType=upstream.headers.get('content-type')||'application/json';
     if(!contentType.includes('application/json')) {
@@ -73,7 +74,14 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
           return failure("We couldn't confirm whether your registration completed. Please check your email inbox or try logging in before submitting again. If you need assistance, contact our support team.",502);
         }
       }else{
-        await upstream.body?.cancel();
+        const errText = await upstream.text().catch(()=>'');
+        console.error('[POBlancer Upstream Non-JSON Response]', {
+          path,
+          targetUrl: new URL(path, backendOrigin).toString(),
+          status: upstream.status,
+          contentType,
+          snippet: errText.slice(0, 300)
+        });
         return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502);
       }
     }

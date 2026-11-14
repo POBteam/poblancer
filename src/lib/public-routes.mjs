@@ -2,21 +2,29 @@ const project={'business':54,'design-creative':64,'development-it':70,'digital-m
 const job={developers:69,business:57,'digital-marketing':72,'graphics-design':91,lifestyle:107,'music-audio':113,'writing-translation':147};
 const service={business:167,'design-creative':65,'development-it':71,'digital-marketing':76,lifestyle:104,'music-audio':111,'video-animation':143};
 const pages=new Set(['/','/about-v2/','/services/','/projects/','/jobs/','/employers/','/freelancers/','/become-seller/','/contact/','/faq/','/terms/','/privacy-policy/','/refund_returns-2/','/login/','/register/']);
-export const defaultWpOrigin = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
-  ? 'https://poblancer.pob.com.ng'
-  : 'http://poblancer.local';
+export const defaultWpOrigin = (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')
+  ? 'http://poblancer.local'
+  : 'https://poblancer.pob.com.ng';
 export function resolveWordPressOrigin(envVal){
  const raw=(typeof envVal==='string'?envVal:(typeof process!=='undefined'&&process.env?.WORDPRESS_ORIGIN))?.trim();
  if(raw){
   try{
    const u=new URL(raw);
-   if(!['pob.com.ng','www.pob.com.ng'].includes(u.hostname))return u.origin;
+   const host=u.hostname.toLowerCase();
+   if(!['pob.com.ng','www.pob.com.ng','poblancer.pobacademycustomer6.workers.dev','poblancer.workers.dev'].includes(host)){
+     if((typeof process === 'undefined' || process.env?.NODE_ENV !== 'development') && (host === 'poblancer.local' || host === 'localhost' || host === '127.0.0.1')){
+       return 'https://poblancer.pob.com.ng';
+     }
+     return u.origin;
+   }
   }catch{}
  }
- return defaultWpOrigin;
+ return (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')
+   ? 'http://poblancer.local'
+   : 'https://poblancer.pob.com.ng';
 }
 export function publicReactLink(value,origin=defaultWpOrigin,context=''){
- try{const u=new URL(value,origin);if(!['poblancer.pob.com.ng',new URL(origin).hostname,'pob.com.ng','www.pob.com.ng','princesageonlinebranding.com','www.princesageonlinebranding.com'].includes(u.hostname))return value;
+ try{const u=new URL(value,origin);if(!['poblancer.local','localhost','poblancer.pob.com.ng',new URL(origin).hostname,'pob.com.ng','www.pob.com.ng','princesageonlinebranding.com','www.princesageonlinebranding.com'].includes(u.hostname))return value;
  const downloads={'/wp-content/uploads/2026/05/Partnership-Agreement-POB-Freelancers.pdf':'/downloads/Partnership-Agreement-POB-Freelancers.pdf','/wp-content/uploads/2026/05/Partnership-Agreement-POB-External-Freelancer.pdf':'/downloads/Partnership-Agreement-POB-External-Freelancer.pdf'};if(downloads[u.pathname])return downloads[u.pathname];
  if(['/projects-2/','/projects-2','/project-list/','/project-list'].includes(u.pathname))return '/projects'+u.search;
  const aliases={'/projects-2/':'/projects','/jobs-2/':'/jobs','/service-layout-1/':'/services','/submission-service/':'/workspace#service-editor','/submission-project/':'/workspace#project-editor','/submission-job/':'/workspace#job-editor'};const alias=aliases[u.pathname.endsWith('/')?u.pathname:u.pathname+'/'];if(alias)return alias+u.search;
