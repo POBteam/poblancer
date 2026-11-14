@@ -4,8 +4,8 @@ import {proxy,failure} from '@/lib/server';
 export const dynamic='force-dynamic';
 async function handle(request:Request,context:{params:Promise<{path:string[]}>}) {
  const {path}=await context.params;
- if(!allowedPath(path))return failure('Endpoint unavailable.',404);
- if(path.join('/')==='wp/v2/media' && request.method!=='POST')return failure('Method unavailable.',405);
+ if(!allowedPath(path))return failure('The requested page or resource could not be found.',404);
+ if(path.join('/')==='wp/v2/media' && request.method!=='POST')return failure('This action is not supported.',405);
  const query=new URL(request.url).search;
  const response=await proxy(request,'/wp-json/'+path.join('/')+query,true);
  if(request.method==='POST'&&path.join('/')==='poblancer/v1/video-portfolio'&&response.ok){const out=await response.clone().json();if(Number.isInteger(out.id)&&out.id>0)revalidateTag('public-video-portfolio-'+out.id,{expire:0});}

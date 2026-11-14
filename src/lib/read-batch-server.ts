@@ -12,7 +12,7 @@ function instance(){return state.pobReadBatcher??=createReadBatcher({send:async(
  const raw=JSON.stringify({requests}),time=String(Math.floor(Date.now()/1000));
  const signature=createHmac('sha256',secret).update(time+'.'+raw).digest('hex');
  const response=await fetch(wp+'/wp-json/poblancer/v1/read-batch',{method:'POST',redirect:'manual',cache:'no-store',signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json','X-POB-Batch-Time':time,'X-POB-Batch-Signature':signature},body:raw});
- if(!response.ok)throw new Error('WordPress could not confirm this read batch. No automatic retry was performed.');
+ if(!response.ok)throw new Error("Unable to confirm data load. Please try again in a moment.");
  const result=await response.json();
  for(const name of ['bootstrap_ms','handler_ms','query_count','peak_mb'])wordpressTiming.add(name,result.timing?.[name]);
  return result.results;
@@ -20,7 +20,7 @@ function instance(){return state.pobReadBatcher??=createReadBatcher({send:async(
 export function canBatchRead(request:Request,path:string){return process.env.POB_ENABLE_READ_BATCH==='1'&&local&&secret.length>=32&&request.method==='GET'&&batchableReadPath(path);}
 export async function batchedRead(request:Request,path:string){
  const cookie=sessionCookies(request.headers.get('cookie')||''),nonce=request.headers.get('x-wp-nonce')||'';
- if(cookie.length>8192||nonce.length>128)throw new Error('Invalid read credentials.');
+ if(cookie.length>8192||nonce.length>128)throw new Error('Invalid session credentials.');
  return await instance().enqueue({path:path.replace(/^\/wp-json/,''),cookie,nonce},request.signal) as {status:number;body:unknown};
 }
 export function batchStats(){return {...(state.pobReadBatcher?.stats()||{reads:0,batches:0,failed:0,aborted:0,pending:0,active:0,maxPending:0,maxActive:0}),wordpress:wordpressTiming.snapshot()};}

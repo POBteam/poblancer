@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import FreelancerWelcomeVideo from './FreelancerWelcomeVideo';
 import {publicReactLink} from '../lib/public-routes.mjs';
+import {sanitizeCustomerMessage} from '../lib/friendly-messages.mjs';
 import {useEffect,useRef,useState} from 'react';
 type Registration={role:string;home:string;native_url:string;state:'form'|'authenticated'|'closed'|'verification';html?:string;providers_html?:string;provider_handoff?:boolean};
 export default function Registration({initialRole}:{initialRole:'freelancer'|'employer'}){
@@ -9,7 +10,7 @@ export default function Registration({initialRole}:{initialRole:'freelancer'|'em
  const host=useRef<HTMLDivElement>(null),result=useRef<HTMLParagraphElement>(null);
  useEffect(()=>{const controller=new AbortController();setSchema(null);setError('');
   if(result.current)result.current.textContent='';
-  fetch('/api/registration-form',{method:'POST',body:new URLSearchParams({role}),credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async r=>{const out=await r.json();if(!r.ok)throw new Error(out.message||'Unable to load registration.');if(!controller.signal.aborted)setSchema(out);}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});
+  fetch('/api/registration-form',{method:'POST',body:new URLSearchParams({role}),credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async r=>{const out=await r.json();if(!r.ok)throw new Error(sanitizeCustomerMessage(out.message,'register')||'Unable to load registration.');if(!controller.signal.aborted)setSchema(out);}).catch(e=>{if(e.name!=='AbortError')setError(sanitizeCustomerMessage(e.message,'register'));});
   return()=>controller.abort();
  },[role]);
  useEffect(()=>{
@@ -21,18 +22,32 @@ export default function Registration({initialRole}:{initialRole:'freelancer'|'em
    e.preventDefault();if(!form.reportValidity())return;
    const password=form.querySelector<HTMLInputElement>('[name$="_password"]'),confirmation=form.querySelector<HTMLInputElement>('[name$="_confirmpassword"]');
    const status=result.current;if(!status)return;
-   if(password&&confirmation&&password.value!==confirmation.value){status.textContent='The passwords do not match.';confirmation.focus();return;}
+   if(password&&confirmation&&password.value!==confirmation.value){status.textContent='The passwords do not match. Please re-enter your password.';confirmation.focus();return;}
    const buttons=[...form.querySelectorAll<HTMLInputElement|HTMLButtonElement>('[type=submit]')];
    if(buttons.some(b=>b.disabled))return;
    buttons.forEach(b=>b.disabled=true);setBusy(true);status.textContent='Submitting your registration…';
    let uncertain=false;
    try{
-    const r=await fetch('/api/register',{method:'POST',credentials:'same-origin',body:new FormData(form),cache:'no-store'}),out=await r.json();
-    const message=new DOMParser().parseFromString(String(out.msg||out.message||'Unable to complete registration.'),'text/html').body.textContent;
-    status.textContent=message;if(!r.ok)throw new Error(message||'Unable to complete registration.');
-    if(out.status){form.reset();form.hidden=true;if(out.redirect)location.assign('/workspace');}
-   }catch{uncertain=true;status.textContent='Unable to confirm registration. Check your email or try logging in before submitting again.';}
-   finally{if(!uncertain){buttons.forEach(b=>b.disabled=false);setBusy(false);}}
+    const r=await fetch('/api/register',{method:'POST',credentials:'same-origin',body:new FormData(form),cache:'no-store'}),out=await r.json().catch(()=>({}));
+    if(r.ok&&out.status){
+     status.textContent=sanitizeCustomerMessage(out.msg||out.message,'register')||'Registration complete. Redirecting to your dashboard…';
+     form.reset();form.hidden=true;
+     if(out.redirect)location.assign('/workspace');
+     return;
+    }
+    if(out&&out.status===false){
+     const message=sanitizeCustomerMessage(out.msg||out.message,'register');
+     status.textContent=message;
+     return;
+    }
+    uncertain=true;
+    status.textContent="We couldn't confirm whether your registration completed. Please check your email inbox or try logging in before submitting again. If you need assistance, contact our support team.";
+   }catch{
+    uncertain=true;
+    status.textContent="We couldn't confirm whether your registration completed. Please check your email inbox or try logging in before submitting again. If you need assistance, contact our support team.";
+   }finally{
+    if(!uncertain){buttons.forEach(b=>b.disabled=false);setBusy(false);}
+   }
   };
   form.addEventListener('submit',submit);return()=>form.removeEventListener('submit',submit);
  },[schema]);
@@ -44,7 +59,7 @@ export default function Registration({initialRole}:{initialRole:'freelancer'|'em
  {!schema&&!error&&<p role="status">Loading registration…</p>}
  {schema?.state==='authenticated'&&<><p>You are already signed in.</p><Link className="button primary" href="/workspace" prefetch={false}>Open dashboard</Link></>}
  {schema?.state==='closed'&&<p>Registration is currently closed.</p>}
- {schema?.state==='verification'&&<><p>Please complete registration using the existing verification form.</p><a className="button" href={schema.native_url}>Continue to registration</a></>}
+ {schema?.state==='verification'&&<><p>Please complete registration using our standard registration verification form.</p><a className="button" href={schema.native_url}>Continue to registration</a></>}
  {schema?.state==='form'&&<><div ref={host} dangerouslySetInnerHTML={{__html:schema.html||''}}/>{schema.providers_html&&(schema.provider_handoff?<p><a href={schema.native_url}>Use the original registration page for additional sign-in options</a></p>:<div dangerouslySetInnerHTML={{__html:schema.providers_html}}/>)}</>}
  <p ref={result} className="register-result" role="status" aria-live="polite"/><p>Already have an account? <Link href="/login" prefetch={false}>Log In</Link></p></section></main></div>;
 }

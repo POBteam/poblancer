@@ -36,10 +36,10 @@ function pob_next_guard() {
     header('X-Content-Type-Options: nosniff');
     
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-        wp_send_json(['message' => 'Request method not permitted.'], 405);
+        wp_send_json(['message' => 'This action is not supported.'], 405);
     }
     if (($_SERVER['HTTP_X_POB_FRONTEND'] ?? '') !== '1') {
-        wp_send_json(['message' => 'Request origin is not permitted.'], 403);
+        wp_send_json(['message' => "You don't have permission to perform this action from your current browser session."], 403);
     }
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
     if (empty($origin) && !empty($_SERVER['HTTP_REFERER'])) {
@@ -50,7 +50,7 @@ function pob_next_guard() {
     }
     $allowed = pob_next_allowed_origins();
     if (!in_array($origin, $allowed, true)) {
-        wp_send_json(['message' => 'Request origin is not permitted.'], 403);
+        wp_send_json(['message' => "You don't have permission to perform this action from your current browser session."], 403);
     }
 }
 
@@ -85,16 +85,16 @@ function pob_next_session() {
 function pob_next_login() {
     pob_next_guard();
     if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'] ?? '')), 'pob_next_login')) {
-        wp_send_json(['message' => 'This sign-in form has expired. Reload it and try again.'], 403);
+        wp_send_json(['message' => 'Your sign-in session has expired. Please refresh the page and sign in again.'], 403);
     }
     if (class_exists('WP_Freeio_Recaptcha') && WP_Freeio_Recaptcha::is_recaptcha_enabled()) {
-        wp_send_json(['message' => 'Please use the original login page for verification.'], 409);
+        wp_send_json(['message' => 'Please complete sign-in using our standard login verification form.'], 409);
     }
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
     $key = 'pob_login_' . hash_hmac('sha256', $ip, wp_salt('auth'));
     $attempts = (int) get_transient($key);
     if ($attempts >= 8) {
-        wp_send_json(['message' => 'Please wait 15 minutes before trying again.'], 429);
+        wp_send_json(['message' => 'Too many sign-in attempts. Please wait 15 minutes before trying again.'], 429);
     }
     set_transient($key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
     
@@ -105,9 +105,20 @@ function pob_next_login() {
     ], is_ssl());
     
     if (is_wp_error($user)) {
-        $error_message = wp_strip_all_tags($user->get_error_message());
-        if (empty($error_message)) {
-            $error_message = 'Sign-in failed. Check your details or use the original login page.';
+        $code = $user->get_error_code();
+        if (in_array($code, ['invalid_username', 'invalid_email'], true)) {
+            $error_message = "We couldn't find an account matching those details. Please check your email or username and try again.";
+        } elseif ($code === 'incorrect_password') {
+            $error_message = "The password you entered is incorrect. Please check your password or use 'Forgotten password' to reset it.";
+        } elseif (in_array($code, ['empty_username', 'empty_password'], true)) {
+            $error_message = "Please enter both your email or username and your password.";
+        } else {
+            $raw = wp_strip_all_tags($user->get_error_message());
+            if (empty($raw) || preg_match('/wordpress|php|database|wp_|sql|table/i', $raw)) {
+                $error_message = "The email, username, or password you entered is incorrect. Please try again.";
+            } else {
+                $error_message = $raw;
+            }
         }
         wp_send_json(['message' => $error_message], 401);
     }
@@ -131,7 +142,7 @@ function pob_next_registration() {
         wp_send_json(array_merge($data, ['state' => 'closed']));
     }
     if (!class_exists('WP_Freeio_User')) {
-        wp_send_json(['message' => 'Registration is unavailable.'], 503);
+        wp_send_json(['message' => 'Registration is temporarily unavailable. Please try again in a moment.'], 503);
     }
     if (class_exists('WP_Freeio_Recaptcha') && WP_Freeio_Recaptcha::is_recaptcha_enabled()) {
         wp_send_json(array_merge($data, ['state' => 'verification']));

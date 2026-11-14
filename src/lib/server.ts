@@ -4,6 +4,7 @@ const bodyState=globalThis as typeof globalThis & {pobBodyAdmission?:ReturnType<
 const admitBody=bodyState.pobBodyAdmission??=createSubmissionAdmission();
 import {sessionCookies, validOrigin, sanitizeSetCookie} from './transport.mjs';
 import {parseRegistrationResponse} from './registration-response.mjs';
+import {sanitizeCustomerMessage} from './friendly-messages.mjs';
 import {canBatchRead,batchedRead} from './read-batch-server';
 export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || (process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
 
@@ -38,13 +39,13 @@ export const frontendOrigin = new URL(
   (process.env.NODE_ENV === 'production' ? 'https://pob.com.ng' : 'http://poblancer.local:3101')
 ).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
-export function failure(message:string,status:number) {return Response.json({message},{status,headers:privateHeaders});}
+export function failure(message:string,status:number) {return Response.json({message:sanitizeCustomerMessage(message)},{status,headers:privateHeaders});}
 export async function proxy(request:Request, path:string, requireNonce=false) {
-  if(request.method!=='GET' && !validOrigin(request, allowedFrontendOrigins)) return failure('Request origin is not permitted.',403);
-  if(requireNonce && !request.headers.get('x-wp-nonce')) return failure('Please sign in again.',401);
+  if(request.method!=='GET' && !validOrigin(request, allowedFrontendOrigins)) return failure("You don't have permission to perform this action from your current browser session.",403);
+  if(requireNonce && !request.headers.get('x-wp-nonce')) return failure('Your session has expired. Please sign in again to continue.',401);
   if(canBatchRead(request,path)){
     try{const out=await batchedRead(request,path);return Response.json(out.body,{status:out.status,headers:privateHeaders});}
-    catch{return failure('WordPress could not complete this read. No automatic retry was performed.',502);}
+    catch{return failure("We couldn't load this information right now. Please try again in a moment.",502);}
   }
   const originHeader = request.headers.get('origin') || request.headers.get('referer');
   const upstreamOrigin = (originHeader && validOrigin(request, allowedFrontendOrigins)) ? new URL(originHeader).origin : frontendOrigin;
@@ -66,10 +67,13 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     if(!contentType.includes('application/json')) {
       if(path==='/?wpfi-ajax=wp_freeio_ajax_registernew'){
         try{body=JSON.stringify(parseRegistrationResponse(await upstream.text()));contentType='application/json';}
-        catch{return failure('WordPress could not confirm registration. Check your email or sign in before trying again.',502);}
+        catch(err){
+          console.error('[POBlancer Registration Error]', err instanceof Error ? err.message : err);
+          return failure("We couldn't confirm whether your registration completed. Please check your email inbox or try logging in before submitting again. If you need assistance, contact our support team.",502);
+        }
       }else{
         await upstream.body?.cancel();
-        return failure('WordPress could not confirm the result. No automatic retry was performed.',502);
+        return failure("We couldn't complete your request right now. Please try again in a moment. If the problem continues, contact our support team.",502);
       }
     }
     const output=new Headers(privateHeaders);
@@ -77,8 +81,12 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     for(const cookie of upstream.headers.getSetCookie()) output.append('Set-Cookie', sanitizeSetCookie(cookie));
     const nonce=upstream.headers.get('x-wp-nonce');if(nonce)output.set('X-WP-Nonce',nonce);
     // REST commands must return structured results; never relay an unvalidated redirect.
-    if(upstream.status>=300 && upstream.status<400) return failure('WordPress requested a native-page handoff. Please use the current dashboard.',502);
+    if(upstream.status>=300 && upstream.status<400) return failure('Please continue this action directly in your POBlancer dashboard.',502);
     return new Response(body,{status:upstream.status,headers:output});
-  } catch(error) {if(error instanceof BodyError)return failure(error.message,error.status);return failure('WordPress is unavailable. Your submission has not been automatically retried.',502);}
+  } catch(error) {
+    if(error instanceof BodyError)return failure(error.message,error.status);
+    console.error('[POBlancer Upstream Service Error]', error instanceof Error ? error.message : error);
+    return failure("The service is temporarily unavailable. Please try again in a moment. If the problem continues, contact our support team.",502);
+  }
   finally{releaseBody?.();}
 }

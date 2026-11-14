@@ -12,7 +12,7 @@ export async function readServices(params:URLSearchParams){
  const url=new URL(path,origin);url.search=query.toString();
  const cache=privateServiceQuery(query)?{cache:'no-store' as const}:{next:{revalidate:300,tags:['public-services']}};
  const response=await fetch(url,{...cache,headers:{Accept:'text/html'},signal:AbortSignal.timeout(15000)});
- if(!response.ok)throw new Error('WordPress could not load these service results.');
- const declared=Number(response.headers.get('content-length'));if(declared>2000000)throw new Error('Service results are too large.');
+ if(!response.ok)throw new Error('Unable to load service results at this time.');
+ const declared=Number(response.headers.get('content-length'));if(declared>2000000)throw new Error('Unable to display service results. Please refine your search.');
  return serviceAssets(extractServices(await response.text(),origin));
 }
