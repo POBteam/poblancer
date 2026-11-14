@@ -6,7 +6,7 @@ const sessionReader=createSessionReader({refreshSession:getSession,fetchRead:asy
 }});
 export async function getSession():Promise<Session> {
  const r=await fetch('/api/session',{method:'POST',credentials:'same-origin',cache:'no-store'});
- const data=await r.json();if(!r.ok)throw new Error(data.message||'Unable to connect to WordPress.');sessionReader.remember(data);return data;
+ const data=await r.json();if(!r.ok)throw new Error(data.message||'Unable to connect to POBlancer. Please try again.');sessionReader.remember(data);return data;
 }
 export async function api(path:string,nonce:string,signal?:AbortSignal) {
  const {status,body:data}=await sessionReader.read(path,nonce,signal);
