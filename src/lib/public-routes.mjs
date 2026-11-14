@@ -2,7 +2,10 @@ const project={'business':54,'design-creative':64,'development-it':70,'digital-m
 const job={developers:69,business:57,'digital-marketing':72,'graphics-design':91,lifestyle:107,'music-audio':113,'writing-translation':147};
 const service={business:167,'design-creative':65,'development-it':71,'digital-marketing':76,lifestyle:104,'music-audio':111,'video-animation':143};
 const pages=new Set(['/','/about-v2/','/services/','/projects/','/jobs/','/employers/','/freelancers/','/become-seller/','/contact/','/faq/','/terms/','/privacy-policy/','/refund_returns-2/','/login/','/register/']);
-export function publicReactLink(value,origin='http://poblancer.local',context=''){
+const defaultWpOrigin = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
+  ? 'https://poblancer.pob.com.ng'
+  : 'http://poblancer.local';
+export function publicReactLink(value,origin=defaultWpOrigin,context=''){
  try{const u=new URL(value,origin);if(!['poblancer.pob.com.ng',new URL(origin).hostname,'pob.com.ng','www.pob.com.ng','princesageonlinebranding.com','www.princesageonlinebranding.com'].includes(u.hostname))return value;
  const downloads={'/wp-content/uploads/2026/05/Partnership-Agreement-POB-Freelancers.pdf':'/downloads/Partnership-Agreement-POB-Freelancers.pdf','/wp-content/uploads/2026/05/Partnership-Agreement-POB-External-Freelancer.pdf':'/downloads/Partnership-Agreement-POB-External-Freelancer.pdf'};if(downloads[u.pathname])return downloads[u.pathname];
  if(['/projects-2/','/projects-2','/project-list/','/project-list'].includes(u.pathname))return '/projects'+u.search;

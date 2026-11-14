@@ -7,7 +7,17 @@ export function allowedPath(parts) {
   return (parts[0]==='poblancer' && parts[1]==='v1' && endpoints.has(parts.slice(2).join('/'))) || path==='wp/v2/media';
 }
 export function validOrigin(request, expected) {
-  const reqOrigin = request.headers.get('origin');
+  let reqOrigin = request.headers.get('origin');
+  if (!reqOrigin || reqOrigin === 'null') {
+    const referer = request.headers.get('referer');
+    if (referer) {
+      try {
+        reqOrigin = new URL(referer).origin;
+      } catch {
+        return false;
+      }
+    }
+  }
   if (!reqOrigin || reqOrigin === 'null') return false;
   let normalizedReq;
   try {

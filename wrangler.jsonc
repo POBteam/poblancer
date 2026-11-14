@@ -15,6 +15,6 @@
   },
   "vars": {
     "WORDPRESS_ORIGIN": "https://poblancer.pob.com.ng",
-    "FRONTEND_ORIGIN": "https://poblancer.pobacademycustomer6.workers.dev"
+    "FRONTEND_ORIGIN": "https://pob.com.ng"
   }
 }

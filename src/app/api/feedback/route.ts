@@ -7,12 +7,18 @@ let active=0;
 async function survey(){const r=await fetch(new URL('/contact/',origin),{next:{revalidate:300,tags:['public-feedback-config']},signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error();const html=await r.text();if(html.length>2000000)throw new Error();return parseFeedbackSurvey(html);}
 export async function GET(){try{const s=await survey();return Response.json({question:s.question,maxLength:400},{headers:{'Cache-Control':'public,max-age=60'}});}catch{return Response.json({message:'Feedback is temporarily unavailable. Please try again later.'},{status:503});}}
 export async function POST(request:Request){
- const defaultFrontendOrigins = process.env.NODE_ENV==='production'
-   ? ['https://poblancer.pobacademycustomer6.workers.dev', 'https://pob.com.ng', 'https://poblancer.workers.dev']
-   : [new URL(request.url).origin];
- const allowedOrigins = process.env.FRONTEND_ORIGIN
+ const standardProductionOrigins = [
+   'https://pob.com.ng',
+   'https://poblancer.pobacademycustomer6.workers.dev',
+   'https://poblancer.workers.dev',
+ ];
+ const configuredOrigins = process.env.FRONTEND_ORIGIN
    ? process.env.FRONTEND_ORIGIN.split(',').map(s=>s.trim()).filter(Boolean)
-   : defaultFrontendOrigins;
+   : [];
+ const allowedOrigins = Array.from(new Set([
+   ...(process.env.NODE_ENV==='production' ? standardProductionOrigins : [new URL(request.url).origin]),
+   ...configuredOrigins
+ ]));
  if(!validOrigin(request, allowedOrigins)) return Response.json({message:'Please use the feedback form on this website.'},{status:403});
  const expected=new URL(process.env.FRONTEND_ORIGIN||request.url).origin;
  if(!request.headers.get('content-type')?.startsWith('application/json'))return Response.json({message:'Please check your feedback.'},{status:400});

@@ -23,7 +23,10 @@ const byClass=(node,name)=>all(node,n=>cls(n,name));
 const byTag=(node,tag)=>all(node,n=>n.tag===tag);
 const text=node=>!node?'':typeof node==='string'?decodeText(node):decodeText(node.children.map(text).join(' '));
 const firstText=(node,name)=>text(byClass(node,name)[0]);
-export function publicLink(value,origin='http://poblancer.local'){
+const defaultWpOrigin = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
+  ? 'https://poblancer.pob.com.ng'
+  : 'http://poblancer.local';
+export function publicLink(value,origin=defaultWpOrigin){
  if(typeof value!=='string'||!value.trim())return '#';
  try{const url=new URL(value,origin);return ['http:','https:'].includes(url.protocol)?url.href:'#';}catch{return '#';}
 }

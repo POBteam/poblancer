@@ -12,9 +12,9 @@ if (!defined('POB_WORKSPACE_ENABLED')) {
 function pob_next_allowed_origins() {
     $configured = get_option('pob_frontend_origin', '');
     $origins = [
+        'https://pob.com.ng',
         'https://poblancer.pobacademycustomer6.workers.dev',
         'https://poblancer.workers.dev',
-        'https://pob.com.ng',
         'http://poblancer.local:3101',
         'http://poblancer.local:3102',
         'http://poblancer.local:3103',
@@ -42,6 +42,12 @@ function pob_next_guard() {
         wp_send_json(['message' => 'Request origin is not permitted.'], 403);
     }
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if (empty($origin) && !empty($_SERVER['HTTP_REFERER'])) {
+        $ref_parts = parse_url($_SERVER['HTTP_REFERER']);
+        if (!empty($ref_parts['scheme']) && !empty($ref_parts['host'])) {
+            $origin = $ref_parts['scheme'] . '://' . $ref_parts['host'] . (!empty($ref_parts['port']) ? ':' . $ref_parts['port'] : '');
+        }
+    }
     $allowed = pob_next_allowed_origins();
     if (!in_array($origin, $allowed, true)) {
         wp_send_json(['message' => 'Request origin is not permitted.'], 403);
@@ -52,11 +58,17 @@ function pob_next_session() {
     pob_next_guard();
     $authenticated = is_user_logged_in();
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if (empty($origin) && !empty($_SERVER['HTTP_REFERER'])) {
+        $ref_parts = parse_url($_SERVER['HTTP_REFERER']);
+        if (!empty($ref_parts['scheme']) && !empty($ref_parts['host'])) {
+            $origin = $ref_parts['scheme'] . '://' . $ref_parts['host'] . (!empty($ref_parts['port']) ? ':' . $ref_parts['port'] : '');
+        }
+    }
     $data = [
         'authenticated'  => $authenticated,
         'home'           => home_url('/'),
         'original_login' => home_url('/login/'),
-        'register'       => home_url('/register/'),
+        'register'       => home_url('/pob-register/'),
         'captcha'        => class_exists('WP_Freeio_Recaptcha') && WP_Freeio_Recaptcha::is_recaptcha_enabled(),
     ];
     if ($authenticated) {
@@ -110,7 +122,7 @@ function pob_next_registration() {
     $data = [
         'role'       => $role,
         'home'       => home_url('/'),
-        'native_url' => home_url('/register/?role=' . $role),
+        'native_url' => home_url('/pob-register/?role=' . $role),
     ];
     if (is_user_logged_in()) {
         wp_send_json(array_merge($data, ['state' => 'authenticated']));

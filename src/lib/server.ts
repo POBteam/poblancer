@@ -7,15 +7,36 @@ import {parseRegistrationResponse} from './registration-response.mjs';
 import {canBatchRead,batchedRead} from './read-batch-server';
 export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || (process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
 
-const defaultFrontendOrigins = process.env.NODE_ENV==='production'
-  ? ['https://poblancer.pobacademycustomer6.workers.dev', 'https://pob.com.ng', 'https://poblancer.workers.dev']
-  : ['http://poblancer.local:3101', 'http://poblancer.local:3102', 'http://poblancer.local:3103', 'http://localhost:3101', 'http://localhost:3102', 'http://localhost:3103', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3105'];
+const standardProductionOrigins = [
+  'https://pob.com.ng',
+  'https://poblancer.pobacademycustomer6.workers.dev',
+  'https://poblancer.workers.dev',
+];
+const standardDevelopmentOrigins = [
+  'http://poblancer.local:3101',
+  'http://poblancer.local:3102',
+  'http://poblancer.local:3103',
+  'http://localhost:3101',
+  'http://localhost:3102',
+  'http://localhost:3103',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3105'
+];
 
-export const allowedFrontendOrigins = process.env.FRONTEND_ORIGIN
+const configuredOrigins = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(',').map(s=>s.trim()).filter(Boolean)
-  : defaultFrontendOrigins;
+  : [];
 
-export const frontendOrigin = new URL(allowedFrontendOrigins[0]).origin;
+export const allowedFrontendOrigins = Array.from(new Set([
+  ...(process.env.NODE_ENV === 'production' ? standardProductionOrigins : standardDevelopmentOrigins),
+  ...configuredOrigins
+]));
+
+export const frontendOrigin = new URL(
+  process.env.FRONTEND_ORIGIN?.split(',')[0].trim() ||
+  (process.env.NODE_ENV === 'production' ? 'https://pob.com.ng' : 'http://poblancer.local:3101')
+).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
 export function failure(message:string,status:number) {return Response.json({message},{status,headers:privateHeaders});}
 export async function proxy(request:Request, path:string, requireNonce=false) {
@@ -25,7 +46,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     try{const out=await batchedRead(request,path);return Response.json(out.body,{status:out.status,headers:privateHeaders});}
     catch{return failure('WordPress could not complete this read. No automatic retry was performed.',502);}
   }
-  const originHeader = request.headers.get('origin');
+  const originHeader = request.headers.get('origin') || request.headers.get('referer');
   const upstreamOrigin = (originHeader && validOrigin(request, allowedFrontendOrigins)) ? new URL(originHeader).origin : frontendOrigin;
   const headers=new Headers({'Accept':'application/json','Origin':upstreamOrigin,'X-POB-Frontend':'1'});
   const cookies=sessionCookies(request.headers.get('cookie')||'');if(cookies)headers.set('Cookie',cookies);

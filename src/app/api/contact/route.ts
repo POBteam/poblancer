@@ -5,12 +5,18 @@ export const dynamic='force-dynamic';
 const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
 const attempts=new Map<string,{count:number;until:number}>();
 export async function POST(request:Request){
- const defaultFrontendOrigins = process.env.NODE_ENV==='production'
-   ? ['https://poblancer.pobacademycustomer6.workers.dev', 'https://pob.com.ng', 'https://poblancer.workers.dev']
-   : [new URL(request.url).origin];
- const allowedOrigins = process.env.FRONTEND_ORIGIN
+ const standardProductionOrigins = [
+   'https://pob.com.ng',
+   'https://poblancer.pobacademycustomer6.workers.dev',
+   'https://poblancer.workers.dev',
+ ];
+ const configuredOrigins = process.env.FRONTEND_ORIGIN
    ? process.env.FRONTEND_ORIGIN.split(',').map(s=>s.trim()).filter(Boolean)
-   : defaultFrontendOrigins;
+   : [];
+ const allowedOrigins = Array.from(new Set([
+   ...(process.env.NODE_ENV==='production' ? standardProductionOrigins : [new URL(request.url).origin]),
+   ...configuredOrigins
+ ]));
  if(!validOrigin(request, allowedOrigins)) return Response.json({message:'Please send your message from this website.'},{status:403});
  if(!request.headers.get('content-type')?.startsWith('application/json')||Number(request.headers.get('content-length'))>12000)return Response.json({message:'Please check your message.'},{status:400});
  let input:Record<string,unknown>;try{const bytes=await readBoundedBody(request,{limit:12000,timeoutMs:10000});input=JSON.parse(new TextDecoder().decode(bytes));if(!input||Array.isArray(input)||typeof input!=='object')throw new Error();}catch{return Response.json({message:'Please check your message.'},{status:400});}
