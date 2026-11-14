@@ -16,7 +16,8 @@ import './home-fidelity.css';
 // Public, shared cache only. No session cookies or privileged credentials.
 export const revalidate=300;
 export const metadata:Metadata={title:'POBLancer - POB Digital Experts',description:'Connect with skilled POBLancers to deliver excellence.',robots:{index:false,follow:false}};
-const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
+import {resolveWordPressOrigin} from '../lib/public-routes.mjs';
+const origin=resolveWordPressOrigin();
 const native=(path:string)=>['/services/','/freelancers/'].includes(path)?path:new URL(path,origin).href;
 
 async function loadHome(){

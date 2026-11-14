@@ -16,7 +16,8 @@ import './about.css';
 
 export const revalidate=300;
 export const metadata:Metadata={title:'About | POBlancer - POB Digital Experts',description:'Learn about POBlancer, our freelancers and the POB Digital Experts community.',robots:{index:false,follow:false}};
-const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
+import {resolveWordPressOrigin} from '../../lib/public-routes.mjs';
+const origin=resolveWordPressOrigin();
 const native=(path:string)=>new URL(path,origin).href;
 const asset=(url:string)=>{const path=new URL(url,origin).pathname;return (assetMap as Record<string,string>)[path]||url;};
 async function loadAbout(){

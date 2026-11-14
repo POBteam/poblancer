@@ -1,8 +1,9 @@
 import {parsePublicHtml,byTag,byClass} from '../../../lib/public-home.mjs';
 import {readBoundedBody} from '../../../lib/request-body.mjs';
 import {validOrigin} from '../../../lib/transport.mjs';
+import {resolveWordPressOrigin} from '../../../lib/public-routes.mjs';
 export const dynamic='force-dynamic';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
+const origin=resolveWordPressOrigin();
 const attempts=new Map<string,{count:number;until:number}>();
 export async function POST(request:Request){
  const standardProductionOrigins = [

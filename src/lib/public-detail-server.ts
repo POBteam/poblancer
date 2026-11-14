@@ -1,5 +1,6 @@
 import 'server-only';
 import {extractDetail} from './public-detail.mjs';
 import sources from '../data/detail-sources.json';
-const origin=new URL(process.env.WORDPRESS_ORIGIN||(process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
+import {resolveWordPressOrigin} from './public-routes.mjs';
+const origin=resolveWordPressOrigin();
 export async function readDetail(kind:string,slug:string){if(!['job','service','project'].includes(kind)||!(/^[a-z0-9][a-z0-9-]{0,240}$/).test(slug))return null;const path=`/${kind}/${slug}/`,snapshot=(sources as Record<string,string>)[path];try{const response=await fetch(new URL(path,origin),{next:{revalidate:300,tags:['public-details']},headers:{Accept:'text/html'},signal:AbortSignal.timeout(15000)});if(response.status===404)return null;if(!response.ok||Number(response.headers.get('content-length'))>2000000)throw new Error('Unavailable');return extractDetail(await response.text(),kind,origin,path);}catch{if(snapshot)return extractDetail(snapshot,kind,origin,path);throw new Error('Unable to load this listing. Please try again.');}}

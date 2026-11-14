@@ -5,8 +5,9 @@ const admitBody=bodyState.pobBodyAdmission??=createSubmissionAdmission();
 import {sessionCookies, validOrigin, sanitizeSetCookie} from './transport.mjs';
 import {parseRegistrationResponse} from './registration-response.mjs';
 import {sanitizeCustomerMessage} from './friendly-messages.mjs';
+import {resolveWordPressOrigin} from './public-routes.mjs';
 import {canBatchRead,batchedRead} from './read-batch-server';
-export const wpOrigin = new URL(process.env.WORDPRESS_ORIGIN || (process.env.NODE_ENV==='production'?'https://poblancer.pob.com.ng':'http://poblancer.local')).origin;
+export const wpOrigin = resolveWordPressOrigin();
 
 const standardProductionOrigins = [
   'https://pob.com.ng',
