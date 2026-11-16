@@ -1,4 +1,4 @@
-export const endpoints = new Set(['workspace','page-views','listings','addons','service-editor','video-portfolio','proposal-submit','public-action','commerce','job-application','availability','editor-terms','employer-editor','profile','messages','collection','account-tool','management','contract','support','support/action','support/demo']);
+export const endpoints = new Set(['workspace','logout','page-views','listings','addons','service-editor','video-portfolio','proposal-submit','public-action','commerce','job-application','availability','editor-terms','employer-editor','profile','messages','collection','account-tool','management','contract','support','support/action','support/demo']);
 export function localBatchOrigin(origin,isolatedBenchmark=false){
   return origin==='http://poblancer.local'||(isolatedBenchmark===true&&origin==='http://127.0.0.1:8001');
 }

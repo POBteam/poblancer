@@ -1,11 +1,15 @@
 import {createSessionReader} from './session-read.mjs';
-export type Session={authenticated:boolean;nonce?:string;login_nonce?:string;home:string;original_login:string;register:string;logout?:string;captcha?:boolean;user?:{name:string;id:number}};
-const sessionReader=createSessionReader({refreshSession:getSession,fetchRead:async(path:string,nonce:string,signal?:AbortSignal)=>{
+export type Session={authenticated:boolean;nonce?:string;login_nonce?:string;home:string;original_login:string;register:string;logout?:string;captcha?:boolean;user?:{name:string;id:number};workspace?:any};
+const sessionReader=createSessionReader({refreshSession:()=>getSession(),fetchRead:async(path:string,nonce:string,signal?:AbortSignal)=>{
  const r=await fetch('/api/wp/poblancer/v1/'+path,{credentials:'same-origin',cache:'no-store',headers:{'X-WP-Nonce':nonce},signal});
  return {status:r.status,body:await r.json()};
 }});
-export async function getSession():Promise<Session> {
- const r=await fetch('/api/session',{method:'POST',credentials:'same-origin',cache:'no-store'});
+export async function getSession(options?:{workspace?:boolean;view?:string}):Promise<Session> {
+ const params=new URLSearchParams();
+ if(options?.workspace)params.set('workspace','1');
+ if(options?.view)params.set('view',options.view);
+ const query=params.toString()?('?'+params.toString()):'';
+ const r=await fetch('/api/session'+query,{method:'POST',credentials:'same-origin',cache:'no-store'});
  const data=await r.json();if(!r.ok)throw new Error(data.message||'Unable to connect to POBlancer. Please try again.');sessionReader.remember(data);return data;
 }
 export async function api(path:string,nonce:string,signal?:AbortSignal) {

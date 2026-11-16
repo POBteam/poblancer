@@ -38,12 +38,14 @@ add_filter('determine_current_user', function($user_id) {
     return $user_id;
 }, 25);
 
-// 2. Prevent rest_cookie_check_errors from rejecting login, register, and session bootstrap with rest_cookie_invalid_nonce
+// 2. Prevent rest_cookie_check_errors from rejecting login, logout, register, and session bootstrap with rest_cookie_invalid_nonce
 add_filter('rest_authentication_errors', function($result) {
     $rest_route = $GLOBALS['wp']->query_vars['rest_route'] ?? '';
     if (strpos($rest_route, '/poblancer/v1/login') !== false ||
+        strpos($rest_route, '/poblancer/v1/logout') !== false ||
         strpos($rest_route, '/poblancer/v1/register') !== false ||
         strpos($rest_route, '/poblancer/v1/session') !== false ||
+        strpos($rest_route, '/poblancer/v1/workspace') !== false ||
         strpos($rest_route, '/poblancer/v1/registration-form') !== false) {
         
         if (is_wp_error($result) && $result->get_error_code() === 'rest_cookie_invalid_nonce') {
@@ -105,11 +107,41 @@ function pob_next_session($request = null) {
         $user = wp_get_current_user();
         $data['user']   = ['id' => $user->ID, 'name' => $user->display_name];
         $data['nonce']  = wp_create_nonce('wp_rest');
-        $data['logout'] = html_entity_decode(wp_logout_url($origin . '/login'), ENT_QUOTES, 'UTF-8');
+        $data['logout'] = '/api/logout';
+
+        // Single-trip workspace snapshot to eliminate serial waterfalls
+        $include_workspace = false;
+        $view = '';
+        if ($request instanceof WP_REST_Request) {
+            $include_workspace = (bool) $request->get_param('workspace');
+            $view = (string) ($request->get_param('view') ?: '');
+        } elseif (!empty($_GET['workspace']) || !empty($_POST['workspace'])) {
+            $include_workspace = true;
+            $view = (string) ($_GET['view'] ?? $_POST['view'] ?? '');
+        }
+
+        if ($include_workspace && class_exists('POB_Workspace')) {
+            $snapshot = POB_Workspace::snapshot($view);
+            if (!is_wp_error($snapshot)) {
+                $snapshot['logout'] = '/api/logout';
+                $data['workspace'] = $snapshot;
+            }
+        }
     } else {
         $data['login_nonce'] = wp_create_nonce('pob_next_login');
     }
     wp_send_json($data);
+}
+
+function pob_next_logout($request = null) {
+    pob_next_guard();
+    if (empty(get_current_user_id()) && !empty($GLOBALS['pob_authenticated_user_id'])) {
+        wp_set_current_user($GLOBALS['pob_authenticated_user_id']);
+    }
+    wp_destroy_current_session();
+    wp_clear_auth_cookie();
+    wp_set_current_user(0);
+    wp_send_json(['authenticated' => false, 'logged_out' => true]);
 }
 
 function pob_next_login($request = null) {
@@ -236,7 +268,7 @@ function pob_next_register($request = null) {
     }
 }
 
-foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_next_register'] as $action) {
+foreach (['pob_next_session', 'pob_next_login', 'pob_next_logout', 'pob_next_registration', 'pob_next_register'] as $action) {
     add_action('wp_ajax_' . $action, $action);
     add_action('wp_ajax_nopriv_' . $action, $action);
 }
@@ -244,11 +276,22 @@ foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_ne
 // Support direct frontend endpoints outside /wp-admin/
 add_action('wp_loaded', function() {
     $action = $_GET['pob_ajax'] ?? $_POST['pob_ajax'] ?? '';
-    if (in_array($action, ['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_next_register'], true)) {
+    if (in_array($action, ['pob_next_session', 'pob_next_login', 'pob_next_logout', 'pob_next_registration', 'pob_next_register'], true)) {
         call_user_func($action);
         exit;
     }
 });
+
+add_filter('rest_post_dispatch', function($response, $server, $request) {
+    if ($response instanceof WP_REST_Response) {
+        $data = $response->get_data();
+        if (is_array($data) && isset($data['logout'])) {
+            $data['logout'] = '/api/logout';
+            $response->set_data($data);
+        }
+    }
+    return $response;
+}, 10, 3);
 
 add_action('rest_api_init', function() {
     register_rest_route('poblancer/v1', '/session', [
@@ -259,6 +302,11 @@ add_action('rest_api_init', function() {
     register_rest_route('poblancer/v1', '/login', [
         'methods'             => 'POST',
         'callback'            => 'pob_next_login',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('poblancer/v1', '/logout', [
+        'methods'             => ['GET', 'POST'],
+        'callback'            => 'pob_next_logout',
         'permission_callback' => '__return_true',
     ]);
     register_rest_route('poblancer/v1', '/registration-form', [

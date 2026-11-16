@@ -71,6 +71,11 @@ main,.panel,.plan-card,.messages-layout>*{min-width:0}.panel,.plan-card,.message
 
 .registration-layout .auth-tabs .button{width:auto;flex:1 1 0;margin:0}
 
+/* Loading skeleton placeholders with accessible reduced-motion support. */
+.skeleton{background:linear-gradient(90deg,#edeaf8 25%,#f7f6fc 50%,#edeaf8 75%);background-size:200% 100%;animation:pob-shimmer 1.5s infinite;border-radius:6px;display:inline-block}
+@keyframes pob-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.skeleton{animation:none;background:#edeaf8}}
+
 .action-fields{border:0;padding:0;margin:0;min-width:0;display:grid;gap:18px}.action-fields>label{display:grid;gap:8px}.action-fields>label.check{display:flex;align-items:flex-start;gap:10px}
 
 .support-react-form{border:0;padding:0;margin:15px 0;min-width:0}.support-react-form[disabled]{opacity:.75}.support-react-form[disabled] button{cursor:default}
