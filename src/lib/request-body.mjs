@@ -14,9 +14,10 @@ export function createSubmissionAdmission(){
   const small=createBodyAdmission(64),large=createBodyAdmission(4);
   return request=>{
     const length=request.headers.get('content-length'),type=(request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();
-    const boundedJson=type==='application/json'&&length!==null&&/^\d+$/.test(length)&&Number.isSafeInteger(Number(length))&&Number(length)<=256*1024;
+    const isSmallType=type==='application/json'||type==='application/x-www-form-urlencoded';
+    const boundedSmall=isSmallType&&length!==null&&/^\d+$/.test(length)&&Number.isSafeInteger(Number(length))&&Number(length)<=256*1024;
     // The reader enforces this byte limit even if a caller lies about its length.
-    return {release:(boundedJson?small:large)(),limit:boundedJson?256*1024:20*1024*1024,kind:boundedJson?'small-json':'large-or-unknown'};
+    return {release:(boundedSmall?small:large)(),limit:boundedSmall?256*1024:20*1024*1024,kind:boundedSmall?'small-body':'large-or-unknown'};
   };
 }
 export async function readBoundedBody(request,{limit=20*1024*1024,timeoutMs=30000}={}){

@@ -3,15 +3,42 @@ import Link from 'next/link';
 import FreelancerWelcomeVideo from './FreelancerWelcomeVideo';
 import {publicReactLink} from '../lib/public-routes.mjs';
 import {sanitizeCustomerMessage} from '../lib/friendly-messages.mjs';
+import {getCachedRegistrationForm, fetchRegistrationForm, prefetchRegistrationForm} from '../lib/registration-cache.mjs';
 import {useEffect,useRef,useState} from 'react';
 type Registration={role:string;home:string;native_url:string;state:'form'|'authenticated'|'closed'|'verification';html?:string;providers_html?:string;provider_handoff?:boolean};
 export default function Registration({initialRole}:{initialRole:'freelancer'|'employer'}){
- const [role,setRole]=useState(initialRole),[schema,setSchema]=useState<Registration|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [role,setRole]=useState(initialRole),[schema,setSchema]=useState<Registration|null>(()=>getCachedRegistrationForm(initialRole)),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const host=useRef<HTMLDivElement>(null),result=useRef<HTMLParagraphElement>(null);
- useEffect(()=>{const controller=new AbortController();setSchema(null);setError('');
+ useEffect(()=>{
+  let active=true;
+  const controller=new AbortController();
+  const cached=getCachedRegistrationForm(role);
+  if(cached){
+   setSchema(cached);
+   setError('');
+  }else{
+   setSchema(null);
+   setError('');
+  }
   if(result.current)result.current.textContent='';
-  fetch('/api/registration-form',{method:'POST',body:new URLSearchParams({role}),credentials:'same-origin',cache:'no-store',signal:controller.signal}).then(async r=>{const out=await r.json();if(!r.ok)throw new Error(sanitizeCustomerMessage(out.message,'register')||'Unable to load registration.');if(!controller.signal.aborted)setSchema(out);}).catch(e=>{if(e.name!=='AbortError')setError(sanitizeCustomerMessage(e.message,'register'));});
-  return()=>controller.abort();
+
+  fetchRegistrationForm(role,{signal:controller.signal})
+   .then(out=>{
+    if(!active)return;
+    setSchema(out);
+    const otherRole = role === 'freelancer' ? 'employer' : 'freelancer';
+    prefetchRegistrationForm(otherRole);
+   })
+   .catch(e=>{
+    if(active&&e.name!=='AbortError'){
+     if(!cached)setError(sanitizeCustomerMessage(e.message,'register'));
+    }
+   });
+
+  return()=>{
+   active=false;
+   controller.abort();
+  };
  },[role]);
  useEffect(()=>{
   const root=host.current;if(!root||schema?.state!=='form')return;

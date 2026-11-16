@@ -65,6 +65,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     const admission=hasBody?admitBody(request):undefined;
     releaseBody=admission?.release;
     const bytes=hasBody?await readBoundedBody(request,{limit:admission!.limit}):undefined;
+    if(releaseBody){releaseBody();releaseBody=undefined;}
     const timeoutMs = (path === '/wp-json/poblancer/v1/register' || path === '/?wpfi-ajax=wp_freeio_ajax_registernew') ? 90000 : 30000;
     const init:RequestInit & {duplex?:string}={method:request.method,headers,redirect:'manual',cache:'no-store',signal:AbortSignal.timeout(timeoutMs)};
     if(bytes)init.body=bytes;

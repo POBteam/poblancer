@@ -232,17 +232,26 @@ function pob_next_registration($request = null) {
         wp_send_json(array_merge($data, ['state' => 'verification']));
     }
     
+    $cache_key = 'pob_reg_form_' . $role;
+    $cached = get_transient($cache_key);
+    if ($cached && is_array($cached)) {
+        wp_send_json($cached);
+        return;
+    }
+    
     $html = do_shortcode('[wp_freeio_register_' . $role . ']');
     ob_start();
     do_action('register_form_after');
     $providers = ob_get_clean();
     
-    wp_send_json(array_merge($data, [
+    $response_data = array_merge($data, [
         'state'            => 'form',
         'html'             => $html,
         'providers_html'   => $providers,
         'provider_handoff' => (bool) preg_match('/<script\b|\son[a-z]+\s*=/i', $providers),
-    ]));
+    ]);
+    set_transient($cache_key, $response_data, 600);
+    wp_send_json($response_data);
 }
 
 function pob_next_register($request = null) {
@@ -282,12 +291,53 @@ add_action('wp_loaded', function() {
     }
 });
 
+// Fast cache for new service submission schema to eliminate blocking wait on CMB2 & taxonomies
+add_filter('rest_pre_dispatch', function($result, $server, $request) {
+    if ($result !== null) return $result;
+    $route = $request->get_route();
+    if ($request->get_method() === 'GET' && strpos($route, '/poblancer/v1/service-editor') !== false) {
+        $id = absint($request->get_param('id'));
+        $kind = sanitize_key($request->get_param('kind') ?: 'service');
+        if ($id === 0 && $kind === 'service') {
+            $user_id = get_current_user_id() ?: ($GLOBALS['pob_authenticated_user_id'] ?? 0);
+            if ($user_id > 0) {
+                $cached = get_transient('pob_se0_' . $user_id);
+                if ($cached && is_array($cached)) {
+                    $response = new WP_REST_Response($cached);
+                    $response->header('Cache-Control', 'private, no-store');
+                    $response->header('X-POB-Cache', 'HIT');
+                    return $response;
+                }
+            }
+        }
+    }
+    return $result;
+}, 10, 3);
+
 add_filter('rest_post_dispatch', function($response, $server, $request) {
     if ($response instanceof WP_REST_Response) {
         $data = $response->get_data();
         if (is_array($data) && isset($data['logout'])) {
             $data['logout'] = '/api/logout';
             $response->set_data($data);
+        }
+        $route = $request->get_route();
+        if (strpos($route, '/poblancer/v1/service-editor') !== false) {
+            if ($request->get_method() === 'GET' && $response->get_status() === 200) {
+                $id = absint($request->get_param('id'));
+                $kind = sanitize_key($request->get_param('kind') ?: 'service');
+                if ($id === 0 && $kind === 'service') {
+                    $user_id = get_current_user_id() ?: ($GLOBALS['pob_authenticated_user_id'] ?? 0);
+                    if ($user_id > 0 && is_array($data) && !empty($data['fields'])) {
+                        set_transient('pob_se0_' . $user_id, $data, 180);
+                    }
+                }
+            } elseif ($request->get_method() === 'POST') {
+                $user_id = get_current_user_id() ?: ($GLOBALS['pob_authenticated_user_id'] ?? 0);
+                if ($user_id > 0) {
+                    delete_transient('pob_se0_' . $user_id);
+                }
+            }
         }
     }
     return $response;
