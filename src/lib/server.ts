@@ -52,8 +52,10 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
   const upstreamOrigin = (originHeader && validOrigin(request, allowedFrontendOrigins)) ? new URL(originHeader).origin : frontendOrigin;
   const headers=new Headers({'Accept':'application/json','Origin':upstreamOrigin,'X-POB-Frontend':'1'});
   const userAgent = request.headers.get('user-agent');
-  if (userAgent) headers.set('User-Agent', userAgent);
-  else headers.set('User-Agent', 'Mozilla/5.0 (compatible; POBlancer/1.0; +https://pob.com.ng)');
+  const finalUserAgent = (!userAgent || userAgent === 'Mozilla/5.0')
+    ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+    : userAgent;
+  headers.set('User-Agent', finalUserAgent);
   const cookies=sessionCookies(request.headers.get('cookie')||'');if(cookies)headers.set('Cookie',cookies);
   for(const name of ['content-type','x-wp-nonce']) {const value=request.headers.get(name);if(value)headers.set(name,value);}
   // No credentials, forwarded IP, upstream URL or account identity accepted from request data.
@@ -63,7 +65,8 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     const admission=hasBody?admitBody(request):undefined;
     releaseBody=admission?.release;
     const bytes=hasBody?await readBoundedBody(request,{limit:admission!.limit}):undefined;
-    const init:RequestInit & {duplex?:string}={method:request.method,headers,redirect:'manual',cache:'no-store',signal:AbortSignal.timeout(30000)};
+    const timeoutMs = (path === '/wp-json/poblancer/v1/register' || path === '/?wpfi-ajax=wp_freeio_ajax_registernew') ? 90000 : 30000;
+    const init:RequestInit & {duplex?:string}={method:request.method,headers,redirect:'manual',cache:'no-store',signal:AbortSignal.timeout(timeoutMs)};
     if(bytes)init.body=bytes;
     const backendOrigin = resolveWordPressOrigin();
     const upstream=await fetch(new URL(path,backendOrigin),init);

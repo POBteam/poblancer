@@ -30,12 +30,36 @@ function pob_next_allowed_origins() {
     return array_unique(array_filter($origins));
 }
 
+// 1. Capture authenticated user ID from valid WordPress auth cookie before REST core resets it for non-nonce requests
+add_filter('determine_current_user', function($user_id) {
+    if (!empty($user_id)) {
+        $GLOBALS['pob_authenticated_user_id'] = (int) $user_id;
+    }
+    return $user_id;
+}, 25);
+
+// 2. Prevent rest_cookie_check_errors from rejecting login, register, and session bootstrap with rest_cookie_invalid_nonce
+add_filter('rest_authentication_errors', function($result) {
+    $rest_route = $GLOBALS['wp']->query_vars['rest_route'] ?? '';
+    if (strpos($rest_route, '/poblancer/v1/login') !== false ||
+        strpos($rest_route, '/poblancer/v1/register') !== false ||
+        strpos($rest_route, '/poblancer/v1/session') !== false ||
+        strpos($rest_route, '/poblancer/v1/registration-form') !== false) {
+        
+        if (is_wp_error($result) && $result->get_error_code() === 'rest_cookie_invalid_nonce') {
+            return true;
+        }
+    }
+    return $result;
+}, 101);
+
 function pob_next_guard() {
     nocache_headers();
     header('Cache-Control: private, no-store, max-age=0');
     header('X-Content-Type-Options: nosniff');
     
-    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    $method = $_SERVER['REQUEST_METHOD'] ?? '';
+    if ($method !== 'POST' && $method !== 'GET') {
         wp_send_json(['message' => 'This action is not supported.'], 405);
     }
     if (($_SERVER['HTTP_X_POB_FRONTEND'] ?? '') !== '1') {
@@ -56,6 +80,12 @@ function pob_next_guard() {
 
 function pob_next_session($request = null) {
     pob_next_guard();
+    
+    // If a valid WordPress auth cookie exists but was unset by REST core due to missing nonce, restore it
+    if (empty(get_current_user_id()) && !empty($GLOBALS['pob_authenticated_user_id'])) {
+        wp_set_current_user($GLOBALS['pob_authenticated_user_id']);
+    }
+    
     $authenticated = is_user_logged_in();
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
     if (empty($origin) && !empty($_SERVER['HTTP_REFERER'])) {
@@ -134,10 +164,12 @@ function pob_next_login($request = null) {
                 $error_message = $raw;
             }
         }
-        wp_send_json(['message' => $error_message], 401);
+        wp_send_json(['authenticated' => false, 'message' => $error_message], 401);
     }
     
     delete_transient($key);
+    wp_set_current_user($user->ID);
+    wp_set_auth_cookie($user->ID, $remember, is_ssl());
     wp_send_json(['authenticated' => true]);
 }
 
@@ -190,10 +222,17 @@ function pob_next_register($request = null) {
             $_REQUEST[$k] = $v;
         }
     }
-    if (class_exists('WP_Freeio_User')) {
-        WP_Freeio_User::process_register_new();
-    } else {
-        wp_send_json(['status' => false, 'msg' => 'Registration is temporarily unavailable. Please try again in a moment.'], 503);
+    try {
+        if (class_exists('WP_Freeio_User')) {
+            WP_Freeio_User::process_register_new();
+        } else {
+            wp_send_json(['status' => false, 'msg' => 'Registration is temporarily unavailable. Please try again in a moment.'], 503);
+        }
+    } catch (Throwable $e) {
+        wp_send_json([
+            'status' => false,
+            'message' => 'Registration could not be completed at this time.',
+        ], 500);
     }
 }
 
@@ -202,7 +241,7 @@ foreach (['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_ne
     add_action('wp_ajax_nopriv_' . $action, $action);
 }
 
-// Support direct frontend endpoints outside /wp-admin/ to bypass administrative rules
+// Support direct frontend endpoints outside /wp-admin/
 add_action('wp_loaded', function() {
     $action = $_GET['pob_ajax'] ?? $_POST['pob_ajax'] ?? '';
     if (in_array($action, ['pob_next_session', 'pob_next_login', 'pob_next_registration', 'pob_next_register'], true)) {
