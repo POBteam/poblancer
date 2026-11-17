@@ -15,10 +15,9 @@ export default function ListingDetail({data:d}:{data:Data}){const plural=d.kind=
  {d.gallery.length>0&&<DetailGallery images={d.gallery} title={d.title}/>}
  <section className="detail-description"><h2>{d.kind==='job'?'Job Description':d.kind==='project'?'Project Description':'Service Description'}</h2><DetailContent context={plural.toLowerCase()} node={d.description}/></section>
  {d.kind==='project'&&<><section className="detail-section"><h2>Attachments</h2><DetailContent context={plural.toLowerCase()} node={d.attachments}/></section><section className="detail-section"><h2>Skills Required</h2><DetailContent context={plural.toLowerCase()} node={d.skills}/></section></>}
- {video&&<section className="detail-section"><h2>Video</h2><iframe className="detail-video" src={video.replace('autoplay=1','autoplay=0')} referrerPolicy="strict-origin-when-cross-origin" title={d.title+' video'} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy"/></section>}
- {d.kind==='service'&&<PublicVideoPortfolio id={d.id}/>}
+ {(video||d.kind==='service')&&<div className="detail-video-group">{video&&<section className="detail-section detail-section-video"><h2>Video</h2><iframe className="detail-video" src={video.replace('autoplay=1','autoplay=0')} referrerPolicy="strict-origin-when-cross-origin" title={d.title+' video'} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy"/></section>}{d.kind==='service'&&<PublicVideoPortfolio id={d.id}/>}</div>}
  {d.faq.length>0&&<section className="detail-section detail-faq"><h2>Frequently Asked Questions</h2>{d.faq.map((f,i)=><details key={i}><summary>{f.question}</summary><p>{f.answer}</p></details>)}</section>}
- {d.sellerStats&&<section className="detail-section detail-overview"><DetailContent context={plural.toLowerCase()} node={d.sellerStats}/></section>}
+ {d.sellerStats&&<section className="detail-section detail-seller-stats"><DetailContent context={plural.toLowerCase()} node={d.sellerStats}/></section>}
  {d.reviews&&<section className="detail-section detail-reviews"><DetailContent context={plural.toLowerCase()} node={d.reviews}/><PublicAction id={d.id} action="review">Write a review</PublicAction></section>}
  {d.proposals&&<ProjectProposal id={d.id}/>}
  {d.related&&<section className="detail-section detail-related"><DetailContent context={plural.toLowerCase()} node={d.related}/></section>}
