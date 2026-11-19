@@ -7,6 +7,9 @@ test('public source markup is data only: scripts and styles are discarded and at
 });
 test('public links reject executable schemes and missing URLs',()=>{
  assert.equal(publicLink('javascript:alert(1)'),'#');assert.equal(publicLink('data:text/html,hello'),'#');assert.equal(publicLink(undefined),'#');assert.equal(publicLink('/services/','http://poblancer.local'),'http://poblancer.local/services/');
+ assert.equal(publicLink('http://poblancer.local/wp-content/test.jpg','https://poblancer.pob.com.ng'),'https://poblancer.pob.com.ng/wp-content/test.jpg');
+ assert.equal(publicLink('http://poblancer.pob.com.ng/wp-content/test.jpg','https://poblancer.pob.com.ng'),'https://poblancer.pob.com.ng/wp-content/test.jpg');
+ assert.equal(publicLink('http://pob.com.ng/brand/poblancer-logo.png','https://poblancer.pob.com.ng'),'https://pob.com.ng/brand/poblancer-logo.png');
 });
 test('an incomplete WordPress response cannot silently replace the cached homepage with a partial port',()=>{
  assert.throws(()=>extractHomepage('<h1>Temporary error</h1>','http://poblancer.local'),/incomplete/);assert.throws(()=>parsePublicHtml('x'.repeat(2000001)),/allowed size/);

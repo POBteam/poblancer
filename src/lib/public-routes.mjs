@@ -33,6 +33,13 @@ export function publicReactLink(value,origin=defaultWpOrigin,context=''){
  const category=path.match(/^\/(project|job|service)-category\/([a-z0-9-]+)\/$/);if(category){const [,kind,slug]=category;const id=({project,job,service})[kind]?.[slug];if(id)return '/'+({project:'projects',job:'jobs',service:'services'})[kind]+'?filter-category='+id;}
  if(/^\/(job|project|service|employer|freelancer)\/[a-z0-9-]+\/$/.test(path))return path+u.search+u.hash;
  if(pages.has(path))return path+u.search+u.hash;
+ const base=new URL(origin);
+ if(base.protocol==='https:'&&['poblancer.local','localhost','127.0.0.1','poblancer.pob.com.ng'].includes(u.hostname.toLowerCase())){
+  u.protocol='https:';
+  u.hostname=base.hostname;
+  u.port=base.port;
+  return u.href;
+ }
  return value;
  }catch{return value;}
 }

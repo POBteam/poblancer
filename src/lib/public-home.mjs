@@ -1,3 +1,5 @@
+import {defaultWpOrigin} from './public-routes.mjs';
+
 // Only public REST content enters this adapter. No cookies or privileged credentials.
 const entities={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' ',rsquo:'’',lsquo:'‘',rdquo:'”',ldquo:'“',hellip:'…',ndash:'-',mdash:', '};
 export function decodeText(value=''){return value.replace(/&#(x[\da-f]+|\d+);|&([a-z]+);/gi,(all,n,name)=>{if(n){const code=n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n);return code>0&&code<=0x10ffff?String.fromCodePoint(code):'';}return entities[name]??all;}).replace(/—/g,', ').replace(/\s+/g,' ').trim();}
@@ -23,12 +25,28 @@ const byClass=(node,name)=>all(node,n=>cls(n,name));
 const byTag=(node,tag)=>all(node,n=>n.tag===tag);
 const text=node=>!node?'':typeof node==='string'?decodeText(node):decodeText(node.children.map(text).join(' '));
 const firstText=(node,name)=>text(byClass(node,name)[0]);
-const defaultWpOrigin = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'
-  ? 'https://poblancer.pob.com.ng'
-  : 'http://poblancer.local';
 export function publicLink(value,origin=defaultWpOrigin){
  if(typeof value!=='string'||!value.trim())return '#';
- try{const url=new URL(value,origin);return ['http:','https:'].includes(url.protocol)?url.href:'#';}catch{return '#';}
+ try{
+  const base=new URL(origin||defaultWpOrigin);
+  const url=new URL(value,base);
+  if(!['http:','https:'].includes(url.protocol))return '#';
+  const host=url.hostname.toLowerCase();
+  const isLocalHost=['poblancer.local','localhost','127.0.0.1'].includes(host);
+  const isWpHost=isLocalHost||host==='poblancer.pob.com.ng'||host===base.hostname.toLowerCase();
+  if(base.protocol==='https:'&&isWpHost){
+   url.protocol='https:';
+   url.hostname=base.hostname;
+   url.port=base.port;
+  }else if(isLocalHost&&base.hostname!==host){
+   url.protocol=base.protocol;
+   url.hostname=base.hostname;
+   url.port=base.port;
+  }else if(base.protocol==='https:'&&(host==='pob.com.ng'||host==='www.pob.com.ng'||host.endsWith('.pob.com.ng'))){
+   url.protocol='https:';
+  }
+  return url.href;
+ }catch{return '#';}
 }
 export function extractHomepage(html,origin){
  const root=parsePublicHtml(html),section=id=>all(root,n=>n.attrs['data-id']===id)[0];
