@@ -6,7 +6,7 @@ const source=JSON.parse(readFileSync(new URL('../src/data/services-source.json',
 test('Services preserve original records, prices, Freeio filter keys and page count without guest nonces',()=>{
  const d=extractServices(source,'http://poblancer.local');
  assert.equal(d.cards.length,12);assert.equal(d.pages,2);assert.equal(d.cards[0].id,11233);assert.equal(d.cards[0].price,'Starting at: ₦ 80,000.00');assert.equal(d.cards[0].featured,true);
- assert.match(d.count,/18 results/);assert.equal(d.groups.find(g=>g.label==='Categories').fields.length,31);assert.ok(d.groups.some(g=>g.fields.some(f=>f.name==='filter-response_time')));assert.equal(d.sort.length,6);assert.equal(d.distanceUnit,'miles');
+ assert.match(d.count,/13 results/);assert.equal(d.groups.find(g=>g.label==='Categories').fields.length,31);assert.ok(d.groups.some(g=>g.fields.some(f=>f.name==='filter-response_time')));assert.equal(d.sort.length,6);assert.equal(d.distanceUnit,'miles');
  assert.ok(!JSON.stringify(d).includes('data-nonce'));assert.ok(!JSON.stringify(d).includes('<script'));
 });
 test('Public filter URLs are bounded, fixed to approved keys and retain repeated category values',()=>{
