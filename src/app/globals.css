@@ -152,15 +152,15 @@ main,.panel,.plan-card,.messages-layout>*{min-width:0}.panel,.plan-card,.message
 .tour-tip{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){
-.pob-tour-spotlight,.pob-tour-card,.tour-progress-fill{transition:none;animation:none}
+.pob-tour-spotlight,.pob-tour-card,.tour-progress-fill,.pob-cookie-banner{transition:none;animation:none}
 }
 
 /* POBlancer Cookie Consent & Privacy Preference Management */
-.pob-cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:9990;background:#fff;border-top:2px solid #8e83e6;box-shadow:0 -10px 40px rgba(19,13,94,0.18);padding:16px 24px;animation:pobCookieSlideUp .3s cubic-bezier(0.16,1,0.3,1)}
-.cookie-banner-content{max-width:1300px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.pob-cookie-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:1060px;z-index:9990;background:rgba(255,255,255,0.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(142,131,230,0.35);border-radius:14px;box-shadow:0 12px 36px -6px rgba(19,13,94,0.22);padding:16px 22px;animation:pobCookieSlideFadeUp 600ms cubic-bezier(0.16,1,0.3,1) forwards}
+.cookie-banner-content{max-width:100%;margin:0;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .cookie-banner-text{flex:1 1 500px}
-.cookie-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.5px;color:#8e83e6;display:block;margin-bottom:4px}
-.cookie-banner-text p{font-size:12.5px;line-height:1.55;color:#373352;margin:0}
+.cookie-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.5px;color:#6453e0;display:block;margin-bottom:4px}
+.cookie-banner-text p{font-size:12.5px;line-height:1.55;color:#201b3d;margin:0}
 .cookie-banner-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cookie-btn{padding:9px 16px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer}
 .cookie-link-btn{border:0;background:transparent;color:var(--navy);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 10px}
@@ -188,9 +188,9 @@ main,.panel,.plan-card,.messages-layout>*{min-width:0}.panel,.plan-card,.message
 .cookie-switch input:checked+.cookie-slider:before{transform:translateX(18px)}
 .cookie-switch input:focus-visible+.cookie-slider{outline:2px solid #8e83e6;outline-offset:2px}
 .cookie-modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:12px;border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
-@keyframes pobCookieSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes pobCookieSlideFadeUp{from{opacity:0;transform:translate(-50%,22px)}to{opacity:1;transform:translate(-50%,0)}}
 @media(max-width:680px){
-.pob-cookie-banner{padding:14px 16px}
+.pob-cookie-banner{bottom:12px;width:calc(100% - 24px);padding:14px 16px;border-radius:12px}
 .cookie-banner-content{flex-direction:column;align-items:stretch;gap:12px}
 .cookie-banner-actions{justify-content:stretch;gap:8px}
 .cookie-banner-actions .cookie-btn{flex:1 1 auto;text-align:center}

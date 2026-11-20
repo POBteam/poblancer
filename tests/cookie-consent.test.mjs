@@ -28,4 +28,14 @@ test('Cookie consent component enforces NDPA 2023 compliance, distinct categorie
   assert.ok(content.includes('role="region"'), 'Banner must have role="region"');
   assert.ok(content.includes('role="dialog"'), 'Preferences modal must have role="dialog"');
   assert.ok(content.includes('aria-modal="true"'), 'Modal must have aria-modal attribute');
+
+  // Verify 8-second entrance delay
+  assert.ok(content.includes('8000'), 'Must enforce 8-second entrance delay');
+
+  // Verify styles and animations
+  const styles = fs.readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
+  assert.ok(styles.includes('pobCookieSlideFadeUp'), 'Must define smooth upward fade-in animation');
+  assert.ok(styles.includes('rgba(255,255,255,0.78)'), 'Must use 78% opacity background');
+  assert.ok(styles.includes('backdrop-filter:blur'), 'Must include tasteful backdrop blur');
+  assert.ok(styles.includes('translateX(-50%)'), 'Must center banner horizontally with margins');
 });

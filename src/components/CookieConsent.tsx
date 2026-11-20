@@ -41,13 +41,14 @@ export default function CookieConsent() {
           marketing: Boolean(parsed.marketing)
         });
       } else {
-        // Show banner after brief delay
-        const timer = setTimeout(() => setShowBanner(true), 600);
+        // Show banner after 8-second entrance delay (privacy enforcement remains active immediately)
+        const timer = setTimeout(() => setShowBanner(true), 8000);
         return () => clearTimeout(timer);
       }
     } catch {
-      // In private browsing or storage errors, show banner
-      setShowBanner(true);
+      // In private browsing or storage errors, show banner after 8-second delay
+      const timer = setTimeout(() => setShowBanner(true), 8000);
+      return () => clearTimeout(timer);
     } finally {
       setHasLoaded(true);
     }
