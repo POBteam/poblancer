@@ -5,6 +5,7 @@ import HomeMotion from '../../components/public/HomeMotion';
 import DetailContent,{type ContentNode} from '../../components/public/DetailContent';
 import SellerTabs from '../../components/public/SellerTabs';
 import ContactForm from '../../components/public/ContactForm';
+import CookiePreferenceButton from '../../components/CookiePreferenceButton';
 import homeIcons from '../../lib/home-icons.json';
 import {readInfoPage} from '../../lib/public-info-server';
 import {infoTitles} from '../../lib/public-info.mjs';
@@ -36,7 +37,7 @@ export default async function InfoPage({params}:{params:Promise<{info:string}>})
   {data.map.startsWith('https://maps.google.com/')&&<div className="info-wrap contact-map"><iframe src={data.map} title="POBlancer office location" loading="lazy" referrerPolicy="strict-origin-when-cross-origin"/></div>}
   <FAQ title={data.faqTitle} intro={data.faqIntro} items={data.faq}/>
  </>;
- else if(data.kind==='legal')content=<article className="info-wrap legal-content"><h1>{data.title}</h1>{data.subtitle&&<p className="legal-subtitle">{data.subtitle}</p>}<DetailContent node={data.body}/></article>;
+ else if(data.kind==='legal')content=<article className="info-wrap legal-content"><h1>{data.title}</h1>{data.subtitle&&<p className="legal-subtitle">{data.subtitle}</p>}{info==='privacy-policy'&&<div className="privacy-consent-box"><div><strong>Your Privacy &amp; Data Rights (NDPA 2023)</strong><p>Under the Nigeria Data Protection Act 2023 and international standards, you maintain control over your personal data and optional tracking technologies.</p></div><CookiePreferenceButton label="Manage Cookie Preferences ↗"/></div>}<DetailContent node={data.body}/></article>;
  else content=<FAQ title={data.faqTitle} intro={data.faqIntro} items={data.faq}/>;
  return <div className={'public-home public-about public-info info-page-'+info}><HomeMenuBehavior/><HomeMotion/><PublicHeader categories={[]} active={info==='become-seller'?'seller':info==='contact'?'contact':'info'}/><main id="main">{content}</main><PublicFooter/></div>;
 }

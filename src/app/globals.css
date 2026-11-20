@@ -115,3 +115,88 @@ main,.panel,.plan-card,.messages-layout>*{min-width:0}.panel,.plan-card,.message
 .support-steps{display:block!important;list-style:decimal!important;padding-left:24px!important;margin:16px 0}.support-steps>li{display:list-item!important;margin:10px 0;padding-left:4px}.offer-terms>div>span,.offer-terms>div>strong,.offer-terms>div>small{display:block;margin-bottom:6px}
 
 .support-picker{border:1px solid #dedaf0;border-radius:12px;padding:20px;margin:20px 0}.support-picker-results{padding:0;list-style:none}.support-picker-results li{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:12px 0}.support-picker-results small{display:block}
+
+/* Interactive Dashboard Guided Tour */
+.pob-tour-root{position:fixed;inset:0;z-index:10000;pointer-events:none}
+.pob-tour-backdrop{position:fixed;inset:0;background:rgba(15,11,64,0.52);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:10001;pointer-events:auto;transition:opacity .25s ease}
+.pob-tour-spotlight{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(15,11,64,0.52),0 0 0 3px #9187e5,0 8px 32px rgba(19,13,94,0.45);z-index:10001;pointer-events:none;transition:all .28s cubic-bezier(0.2,0.9,0.3,1)}
+.pob-tour-card{position:fixed;background:#fff;color:var(--ink);border-radius:14px;border:1px solid #dcd8f2;box-shadow:0 18px 48px -8px rgba(19,13,94,0.38);padding:18px 20px;z-index:10002;pointer-events:auto;display:flex;flex-direction:column;gap:10px;animation:pobTourPop .25s cubic-bezier(0.16,1,0.3,1)}
+.tour-card-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tour-card-badge-group{display:flex;align-items:center;gap:8px}
+.tour-card-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;background:#eeebfb;color:var(--navy);padding:3px 8px;border-radius:6px}
+.tour-card-step{font-size:11px;font-weight:600;color:var(--muted)}
+.tour-btn-close{border:0;background:transparent;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s}
+.tour-btn-close:hover{color:var(--ink)}
+.tour-progress-track{width:100%;height:4px;background:#eae7f6;border-radius:2px;overflow:hidden}
+.tour-progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),#6c62b8);transition:width .3s ease}
+.tour-title{font-size:16px;font-weight:700;color:var(--navy);line-height:1.35;margin:2px 0 0}
+.tour-desc{font-size:12.5px;line-height:1.6;color:#444158;margin:4px 0 0}
+.tour-tip{display:flex;align-items:flex-start;gap:8px;background:#fbf9ff;border-left:3px solid #8e83e6;padding:7px 10px;border-radius:0 6px 6px 0;font-size:11.5px;line-height:1.5;color:#585370;margin-top:4px}
+.tour-tip-icon{font-size:13px}
+.tour-card-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;padding-top:10px;border-top:1px solid var(--line)}
+.tour-btn-skip{border:0;background:transparent;font-size:11.5px;font-weight:500;color:var(--muted);cursor:pointer;padding:6px 4px;text-decoration:underline;text-underline-offset:3px}
+.tour-btn-skip:hover{color:var(--ink)}
+.tour-nav-group{display:flex;align-items:center;gap:8px}
+.tour-btn-prev{border:1px solid var(--line);background:#fff;color:var(--navy);font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:7px;cursor:pointer;transition:background .15s}
+.tour-btn-prev:hover{background:#f4f2fb}
+.tour-btn-next{font-size:11.5px;font-weight:600;padding:7px 15px;border-radius:7px;cursor:pointer}
+.tour-replay-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#f3f0fd;color:var(--navy);border:1px solid #dcd8f2;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s ease;text-decoration:none}
+.tour-replay-btn:hover{background:#e8e3fa;border-color:#beb5ec;text-decoration:none}
+@keyframes pobTourPop{from{opacity:0;transform:scale(0.96) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes pobTourSlideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:680px){
+.pob-tour-spotlight{border-radius:8px}
+.pob-tour-card{width:calc(100% - 24px)!important;max-width:100%!important;bottom:12px!important;left:12px!important;right:12px!important;top:auto!important;padding:15px;box-shadow:0 -8px 36px rgba(19,13,94,0.4);animation:pobTourSlideUp .25s ease-out}
+.tour-title{font-size:15px}
+.tour-desc{font-size:12px}
+.tour-tip{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+.pob-tour-spotlight,.pob-tour-card,.tour-progress-fill{transition:none;animation:none}
+}
+
+/* POBlancer Cookie Consent & Privacy Preference Management */
+.pob-cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:9990;background:#fff;border-top:2px solid #8e83e6;box-shadow:0 -10px 40px rgba(19,13,94,0.18);padding:16px 24px;animation:pobCookieSlideUp .3s cubic-bezier(0.16,1,0.3,1)}
+.cookie-banner-content{max-width:1300px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.cookie-banner-text{flex:1 1 500px}
+.cookie-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.5px;color:#8e83e6;display:block;margin-bottom:4px}
+.cookie-banner-text p{font-size:12.5px;line-height:1.55;color:#373352;margin:0}
+.cookie-banner-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cookie-btn{padding:9px 16px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer}
+.cookie-link-btn{border:0;background:transparent;color:var(--navy);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px 10px}
+.cookie-link-btn:hover{color:#3f3592}
+.pob-cookie-modal-root{position:fixed;inset:0;z-index:10010;display:grid;place-items:center;padding:16px}
+.cookie-modal-backdrop{position:fixed;inset:0;background:rgba(15,11,64,0.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.cookie-modal-dialog{position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(19,13,94,0.35);padding:24px;width:min(620px,100%);max-height:calc(100svh - 40px);overflow-y:auto;display:flex;flex-direction:column;gap:16px;animation:pobTourPop .25s ease-out}
+.cookie-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+.cookie-modal-header h2{font-size:18px;color:var(--navy);margin:4px 0 0}
+.cookie-modal-close{border:0;background:transparent;font-size:26px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 8px;border-radius:6px}
+.cookie-modal-close:hover{color:var(--ink)}
+.cookie-modal-intro{font-size:12.5px;line-height:1.6;color:#55506b;margin:0}
+.cookie-category-list{display:grid;gap:12px}
+.cookie-category-card{border:1px solid #e1deef;border-radius:10px;padding:14px 16px;background:#fbfaff}
+.cookie-cat-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.cookie-cat-header strong{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.cookie-cat-badge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:#eeebfb;color:var(--navy);padding:2px 6px;border-radius:4px;display:inline-block}
+.cookie-cat-badge.always-active{background:#edf7ef;color:#2e7d32}
+.cookie-cat-desc{font-size:11.5px;line-height:1.55;color:#635e79;margin:0}
+.cookie-switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;cursor:pointer}
+.cookie-switch input{opacity:0;width:0;height:0}
+.cookie-slider{position:absolute;cursor:pointer;inset:0;background:#cfc9e6;border-radius:24px;transition:.25s ease}
+.cookie-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.25s ease;box-shadow:0 2px 4px rgba(0,0,0,0.18)}
+.cookie-switch input:checked+.cookie-slider{background:var(--navy)}
+.cookie-switch input:checked+.cookie-slider:before{transform:translateX(18px)}
+.cookie-switch input:focus-visible+.cookie-slider{outline:2px solid #8e83e6;outline-offset:2px}
+.cookie-modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:12px;border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
+@keyframes pobCookieSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media(max-width:680px){
+.pob-cookie-banner{padding:14px 16px}
+.cookie-banner-content{flex-direction:column;align-items:stretch;gap:12px}
+.cookie-banner-actions{justify-content:stretch;gap:8px}
+.cookie-banner-actions .cookie-btn{flex:1 1 auto;text-align:center}
+.cookie-modal-dialog{padding:18px 16px}
+.cookie-modal-footer{flex-direction:column;gap:8px}
+.cookie-modal-footer .cookie-btn{width:100%;text-align:center}
+}
+
+
