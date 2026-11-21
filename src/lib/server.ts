@@ -65,6 +65,16 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
     : userAgent;
   headers.set('User-Agent', finalUserAgent);
+  const clientIp = request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-real-ip') ||
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim();
+  if (clientIp) {
+    headers.set('X-Real-IP', clientIp);
+    headers.set('X-Forwarded-For', clientIp);
+  }
+  const referer = request.headers.get('referer') || (upstreamOrigin + '/');
+  headers.set('Referer', referer);
+  headers.set('X-Forwarded-Proto', 'https');
   const cookies=sessionCookies(request.headers.get('cookie')||'');if(cookies)headers.set('Cookie',cookies);
   for(const name of ['content-type','x-wp-nonce']) {const value=request.headers.get(name);if(value)headers.set(name,value);}
   // No credentials, forwarded IP, upstream URL or account identity accepted from request data.
