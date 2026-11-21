@@ -56,7 +56,7 @@ async function handleLogout(request: Request) {
     const sCookies = sessionCookies(cookie);
     if (sCookies) headers.set('Cookie', sCookies);
 
-    await fetch(new URL('/wp-json/poblancer/v1/logout', backendOrigin), {
+    await fetch(new URL('/?pob_ajax=pob_next_logout', backendOrigin), {
       method: 'POST',
       headers,
       redirect: 'manual',

@@ -41,6 +41,15 @@ export const frontendOrigin = new URL(
 ).origin;
 export const privateHeaders = {'Cache-Control':'private, no-store, max-age=0','Vary':'Cookie','X-Content-Type-Options':'nosniff'};
 export function failure(message:string,status:number) {return Response.json({message:sanitizeCustomerMessage(message)},{status,headers:privateHeaders});}
+
+const administrativeFallbackMap: Record<string, string> = {
+  '/wp-json/poblancer/v1/session': '/?pob_ajax=pob_next_session',
+  '/wp-json/poblancer/v1/login': '/?pob_ajax=pob_next_login',
+  '/wp-json/poblancer/v1/registration-form': '/?pob_ajax=pob_next_registration',
+  '/wp-json/poblancer/v1/register': '/?pob_ajax=pob_next_register',
+  '/wp-json/poblancer/v1/logout': '/?pob_ajax=pob_next_logout',
+};
+
 export async function proxy(request:Request, path:string, requireNonce=false) {
   if(request.method!=='GET' && !validOrigin(request, allowedFrontendOrigins)) return failure("You don't have permission to perform this action from your current browser session.",403);
   if(requireNonce && !request.headers.get('x-wp-nonce')) return failure('Your session has expired. Please sign in again to continue.',401);
@@ -66,7 +75,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     releaseBody=admission?.release;
     const bytes=hasBody?await readBoundedBody(request,{limit:admission!.limit}):undefined;
     if(releaseBody){releaseBody();releaseBody=undefined;}
-    const timeoutMs = (path === '/wp-json/poblancer/v1/register' || path === '/?wpfi-ajax=wp_freeio_ajax_registernew') ? 90000 : 30000;
+    const timeoutMs = (path === '/wp-json/poblancer/v1/register' || path === '/?pob_ajax=pob_next_register' || path === '/?wpfi-ajax=wp_freeio_ajax_registernew') ? 90000 : 30000;
     const init:RequestInit & {duplex?:string}={method:request.method,headers,redirect:'manual',cache:'no-store',signal:AbortSignal.timeout(timeoutMs)};
     if(bytes)init.body=bytes;
     const backendOrigin = resolveWordPressOrigin();
@@ -74,7 +83,7 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
     let body:BodyInit|null=upstream.body;
     let contentType=upstream.headers.get('content-type')||'application/json';
     if(!contentType.includes('application/json')) {
-      if(path==='/wp-json/poblancer/v1/register' || path==='/?wpfi-ajax=wp_freeio_ajax_registernew'){
+      if(path==='/wp-json/poblancer/v1/register' || path==='/?pob_ajax=pob_next_register' || path==='/?wpfi-ajax=wp_freeio_ajax_registernew'){
         try{body=JSON.stringify(parseRegistrationResponse(await upstream.text()));contentType='application/json';}
         catch(err){
           console.error('[POBlancer Registration Error]', err instanceof Error ? err.message : err);
@@ -82,6 +91,25 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
         }
       }else{
         const errText = await upstream.text().catch(()=>'');
+        const basePath = path.split('?')[0];
+        const search = path.includes('?') ? '&' + path.split('?')[1] : '';
+        const fallbackTarget = administrativeFallbackMap[basePath];
+        if (fallbackTarget && (upstream.status === 403 || errText.includes('administrative rules'))) {
+          try {
+            const fallbackUpstream = await fetch(new URL(fallbackTarget + search, backendOrigin), init);
+            const fbCt = fallbackUpstream.headers.get('content-type') || 'application/json';
+            if (fbCt.includes('application/json')) {
+              const fbOutput = new Headers(privateHeaders);
+              fbOutput.set('Content-Type', fbCt);
+              for (const cookie of fallbackUpstream.headers.getSetCookie()) fbOutput.append('Set-Cookie', sanitizeSetCookie(cookie));
+              const nonce = fallbackUpstream.headers.get('x-wp-nonce'); if (nonce) fbOutput.set('X-WP-Nonce', nonce);
+              if (fallbackUpstream.status >= 300 && fallbackUpstream.status < 400) return failure('Please continue this action directly in your POBlancer dashboard.', 502);
+              return new Response(fallbackUpstream.body, { status: fallbackUpstream.status, headers: fbOutput });
+            }
+          } catch (fbErr) {
+            console.error('[POBlancer Fallback Error]', fbErr instanceof Error ? fbErr.message : fbErr);
+          }
+        }
         console.error('[POBlancer Upstream Non-JSON Response]', {
           path,
           targetUrl: new URL(path, backendOrigin).toString(),
