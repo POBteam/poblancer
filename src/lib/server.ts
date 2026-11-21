@@ -122,6 +122,9 @@ export async function proxy(request:Request, path:string, requireNonce=false) {
         failRes.headers.set('X-Upstream-ContentType', contentType);
         failRes.headers.set('X-Upstream-Target', new URL(path, backendOrigin).toString());
         failRes.headers.set('X-Upstream-Snippet', errText.slice(0, 200).replace(/[\r\n]+/g, ' '));
+        const dumpHeaders: Record<string, string> = {};
+        upstream.headers.forEach((v, k) => { dumpHeaders[k] = v; });
+        failRes.headers.set('X-Upstream-All-Headers', JSON.stringify(dumpHeaders).slice(0, 500));
         return failRes;
       }
     }
